@@ -22,6 +22,17 @@ describe("Health (e2e)", () => {
         update: async () => ({}),
         delete: async () => undefined,
       },
+      monthlyGoal: {
+        findUnique: async () => null,
+        upsert: async () => ({}),
+        deleteMany: async () => ({ count: 0 }),
+      },
+      weeklyGoal: {
+        findMany: async () => [],
+        findUnique: async () => null,
+        upsert: async () => ({}),
+        deleteMany: async () => ({ count: 0 }),
+      },
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

@@ -285,6 +285,18 @@
   margin-bottom: 12px;
 }
 
+.goalsToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.buttonSmall {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
 .goalTextarea {
   width: 100%;
   padding: 10px 12px;
@@ -318,9 +330,19 @@
   margin: 0;
 }
 
+.weekGoalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
 .weekGoalLabel {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .weekGoalRange {

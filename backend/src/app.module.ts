@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
+import { GoalsModule } from "./goals/goals.module";
 import { HealthModule } from "./health/health.module";
 import { MemoModule } from "./memo/memo.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -26,6 +27,7 @@ function resolveEnvFilePath(): string {
     PrismaModule,
     HealthModule,
     MemoModule,
+    GoalsModule,
   ],
 })
 export class AppModule {}

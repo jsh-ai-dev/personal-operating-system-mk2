@@ -12,6 +12,14 @@ import { getCalendarWeekRanges } from "@/features/calendar/domain/calendarWeekRo
 import { buildKoreaPublicHolidayNameMap } from "@/features/calendar/domain/koreaPublicHolidays";
 import { toDateKey, toYearMonthKey } from "@/features/calendar/domain/dateKey";
 import {
+  deleteMonthlyGoalRemote,
+  deleteWeeklyGoalRemote,
+  fetchMonthlyGoal,
+  fetchWeeklyGoalsBatch,
+  upsertMonthlyGoalRemote,
+  upsertWeeklyGoalRemote,
+} from "@/features/calendar/infrastructure/goalsApi";
+import {
   deleteMemoRemote,
   fetchMemosInRange,
   upsertMemoRemote,
@@ -27,9 +35,15 @@ export function useCalendar() {
   const [monthlyGoals, setMonthlyGoals] = useState<Record<string, string>>({});
   const [weeklyGoals, setWeeklyGoals] = useState<Record<string, string>>({});
   const [memosLoading, setMemosLoading] = useState(false);
+  const [goalsLoading, setGoalsLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const monthlyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const weeklyTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const monthlyGoalsRef = useRef(monthlyGoals);
+  monthlyGoalsRef.current = monthlyGoals;
+  const prevViewYmRef = useRef<string | null>(null);
 
   const days = useMemo(() => createMonthCalendar(viewDate), [viewDate]);
   const monthLabel = useMemo(() => toMonthLabel(viewDate), [viewDate]);
@@ -76,6 +90,56 @@ export function useCalendar() {
       cancelled = true;
     };
   }, [days]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const keys = weekRanges.map((r) => r.rangeKey);
+
+    void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setGoalsLoading(true);
+      setSyncError(null);
+      try {
+        const [m, w] = await Promise.all([
+          fetchMonthlyGoal(viewYearMonthKey),
+          fetchWeeklyGoalsBatch(keys),
+        ]);
+        if (cancelled) return;
+        setMonthlyGoals((prev) => ({ ...prev, [viewYearMonthKey]: m.body }));
+        setWeeklyGoals((prev) => {
+          const next = { ...prev };
+          for (const row of w) next[row.rangeKey] = row.body;
+          return next;
+        });
+      } catch {
+        if (!cancelled) setSyncError("목표를 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) setGoalsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewYearMonthKey, weekRanges]);
+
+  useEffect(() => {
+    const prevYm = prevViewYmRef.current;
+    if (
+      prevYm !== null &&
+      prevYm !== viewYearMonthKey &&
+      monthlyTimerRef.current !== null
+    ) {
+      clearTimeout(monthlyTimerRef.current);
+      monthlyTimerRef.current = null;
+      const text = monthlyGoalsRef.current[prevYm] ?? "";
+      void upsertMonthlyGoalRemote(prevYm, text).catch(() => {
+        setSyncError("저장에 실패했습니다.");
+      });
+    }
+    prevViewYmRef.current = viewYearMonthKey;
+  }, [viewYearMonthKey]);
 
   const selectedMemo = useMemo(() => {
     if (!selectedDate) return emptyMemo();
@@ -171,12 +235,79 @@ export function useCalendar() {
     setViewDate(getStartOfMonth(new Date()));
   };
 
-  const setMonthlyGoal = useCallback((text: string) => {
-    setMonthlyGoals((prev) => ({ ...prev, [viewYearMonthKey]: text }));
+  const scheduleMonthlyPersist = useCallback((yearMonth: string, text: string) => {
+    if (monthlyTimerRef.current) clearTimeout(monthlyTimerRef.current);
+    monthlyTimerRef.current = setTimeout(() => {
+      monthlyTimerRef.current = null;
+      void upsertMonthlyGoalRemote(yearMonth, text).catch(() => {
+        setSyncError("저장에 실패했습니다.");
+      });
+    }, 500);
+  }, []);
+
+  const setMonthlyGoal = useCallback(
+    (text: string) => {
+      setMonthlyGoals((prev) => ({ ...prev, [viewYearMonthKey]: text }));
+      scheduleMonthlyPersist(viewYearMonthKey, text);
+    },
+    [viewYearMonthKey, scheduleMonthlyPersist],
+  );
+
+  const scheduleWeeklyPersist = useCallback((rangeKey: string, text: string) => {
+    const timers = weeklyTimersRef.current;
+    if (timers[rangeKey]) clearTimeout(timers[rangeKey]);
+    timers[rangeKey] = setTimeout(() => {
+      delete timers[rangeKey];
+      void upsertWeeklyGoalRemote(rangeKey, text).catch(() => {
+        setSyncError("저장에 실패했습니다.");
+      });
+    }, 500);
+  }, []);
+
+  const setWeeklyGoalForRange = useCallback(
+    (rangeKey: string, text: string) => {
+      setWeeklyGoals((prev) => ({ ...prev, [rangeKey]: text }));
+      scheduleWeeklyPersist(rangeKey, text);
+    },
+    [scheduleWeeklyPersist],
+  );
+
+  const deleteMonthlyGoal = useCallback(async () => {
+    if (monthlyTimerRef.current) {
+      clearTimeout(monthlyTimerRef.current);
+      monthlyTimerRef.current = null;
+    }
+    const ym = viewYearMonthKey;
+    try {
+      setSyncError(null);
+      await deleteMonthlyGoalRemote(ym);
+      setMonthlyGoals((prev) => {
+        const next = { ...prev };
+        delete next[ym];
+        return next;
+      });
+    } catch {
+      setSyncError("삭제에 실패했습니다.");
+    }
   }, [viewYearMonthKey]);
 
-  const setWeeklyGoalForRange = useCallback((rangeKey: string, text: string) => {
-    setWeeklyGoals((prev) => ({ ...prev, [rangeKey]: text }));
+  const deleteWeeklyGoalForRange = useCallback(async (rangeKey: string) => {
+    const timers = weeklyTimersRef.current;
+    if (timers[rangeKey]) {
+      clearTimeout(timers[rangeKey]);
+      delete timers[rangeKey];
+    }
+    try {
+      setSyncError(null);
+      await deleteWeeklyGoalRemote(rangeKey);
+      setWeeklyGoals((prev) => {
+        const next = { ...prev };
+        delete next[rangeKey];
+        return next;
+      });
+    } catch {
+      setSyncError("삭제에 실패했습니다.");
+    }
   }, []);
 
   return {
@@ -189,6 +320,8 @@ export function useCalendar() {
     setMonthlyGoal,
     weeklyGoals,
     setWeeklyGoalForRange,
+    deleteMonthlyGoal,
+    deleteWeeklyGoalForRange,
     selectedDate,
     setSelectedDate,
     selectedBrief: selectedMemo.brief,
@@ -198,6 +331,7 @@ export function useCalendar() {
     deleteMemoForSelected,
     getBriefForDate,
     memosLoading,
+    goalsLoading,
     syncError,
     goToPreviousMonth,
     goToNextMonth,

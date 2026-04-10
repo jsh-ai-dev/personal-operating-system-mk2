@@ -19,6 +19,8 @@ export function Calendar() {
     setMonthlyGoal,
     weeklyGoals,
     setWeeklyGoalForRange,
+    deleteMonthlyGoal,
+    deleteWeeklyGoalForRange,
     selectedDate,
     setSelectedDate,
     selectedBrief,
@@ -28,6 +30,7 @@ export function Calendar() {
     deleteMemoForSelected,
     getBriefForDate,
     memosLoading,
+    goalsLoading,
     syncError,
     goToPreviousMonth,
     goToNextMonth,
@@ -187,10 +190,23 @@ export function Calendar() {
 
       <div className={styles.goalsSection}>
         <h2 className={styles.goalsSectionTitle}>월간 목표</h2>
+        {goalsLoading ? (
+          <p className={styles.syncHint}>월간·주간 목표 불러오는 중…</p>
+        ) : null}
         <p className={styles.goalsSectionHint}>
           지금 보고 있는 달({monthLabel})에 대한 목표를 적습니다. 다른 달로 넘기면 해당 달 목표가
           표시됩니다.
         </p>
+        <div className={styles.goalsToolbar}>
+          <button
+            type="button"
+            className={[styles.buttonDanger, styles.buttonSmall].filter(Boolean).join(" ")}
+            onClick={() => void deleteMonthlyGoal()}
+            disabled={goalsLoading}
+          >
+            이번 달 월간 목표 삭제
+          </button>
+        </div>
         <label className={styles.fieldLabel} htmlFor="calendar-monthly-goal">
           이번 달 목표
         </label>
@@ -201,21 +217,33 @@ export function Calendar() {
           placeholder="예: 이번 달에 집중할 일, 습관, 마일스톤 등"
           value={monthlyGoal}
           onChange={(e) => setMonthlyGoal(e.target.value)}
+          disabled={goalsLoading}
+          aria-disabled={goalsLoading}
         />
 
         <h3 className={styles.goalsSubTitle}>주간 목표</h3>
         <p className={styles.goalsSectionHint}>
           달력 그리드 한 행(일요일~토요일)과 같은 날짜 구간입니다. 라벨은 월일만 표기합니다(예:
-          0329~0404).
+          0329~0404). 입력은 잠시 후 서버에 자동 저장됩니다.
         </p>
         <ul className={styles.weekGoalList}>
           {weekRanges.map((row) => {
             const inputId = `week-goal-${row.rangeKey}`;
             return (
               <li key={row.rangeKey} className={styles.weekGoalRow}>
-                <label className={styles.weekGoalLabel} htmlFor={inputId}>
-                  <span className={styles.weekGoalRange}>{row.label}</span>
-                </label>
+                <div className={styles.weekGoalHeader}>
+                  <label className={styles.weekGoalLabel} htmlFor={inputId}>
+                    <span className={styles.weekGoalRange}>{row.label}</span>
+                  </label>
+                  <button
+                    type="button"
+                    className={[styles.buttonDanger, styles.buttonSmall].filter(Boolean).join(" ")}
+                    onClick={() => void deleteWeeklyGoalForRange(row.rangeKey)}
+                    disabled={goalsLoading}
+                  >
+                    삭제
+                  </button>
+                </div>
                 <textarea
                   id={inputId}
                   className={styles.goalTextarea}
@@ -223,6 +251,8 @@ export function Calendar() {
                   placeholder="이번 주 목표 또는 집중할 일"
                   value={weeklyGoals[row.rangeKey] ?? ""}
                   onChange={(e) => setWeeklyGoalForRange(row.rangeKey, e.target.value)}
+                  disabled={goalsLoading}
+                  aria-disabled={goalsLoading}
                 />
               </li>
             );

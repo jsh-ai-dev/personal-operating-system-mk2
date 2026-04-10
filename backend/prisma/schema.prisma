@@ -17,3 +17,21 @@ model CalendarMemo {
 
   @@map("calendar_memos")
 }
+
+/// `toYearMonthKey`와 동일 (YYYY-MM)
+model MonthlyGoal {
+  yearMonth String   @id @map("year_month")
+  body      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("monthly_goals")
+}
+
+/// 달력 그리드 행 키 `YYYY-MM-DD_YYYY-MM-DD`
+model WeeklyGoal {
+  rangeKey  String   @id @map("range_key")
+  body      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("weekly_goals")
+}
