@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { parseErrorMessage } from "@/lib/api/parseErrorMessage";
 import styles from "@/components/app-shell/AppShell.module.css";
 
 const NAV_ITEMS = [
@@ -16,6 +17,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    router.replace("/login");
+    router.refresh();
+  }
+
+  async function revokeAllDevices() {
+    if (
+      !window.confirm(
+        "모든 기기에서 로그아웃할까요? 이 기기를 포함해 다른 기기의 로그인도 모두 해제됩니다.",
+      )
+    ) {
+      return;
+    }
+    const res = await fetch("/api/auth/revoke-all", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      window.alert(await parseErrorMessage(res));
+      return;
+    }
     router.replace("/login");
     router.refresh();
   }
@@ -42,9 +63,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className={styles.sidebarFooter}>
-          <button type="button" className={styles.logoutButton} onClick={() => void logout()}>
-            로그아웃
-          </button>
+          <div className={styles.sessionActions}>
+            <button type="button" className={styles.logoutButton} onClick={() => void logout()}>
+              로그아웃
+            </button>
+            <button
+              type="button"
+              className={styles.revokeAllButton}
+              onClick={() => void revokeAllDevices()}
+            >
+              모든 기기에서 로그아웃
+            </button>
+          </div>
         </div>
       </aside>
       <div className={styles.content}>
