@@ -16,12 +16,15 @@ export class WeeklyGoalService {
     }
   }
 
-  async findManyByKeys(keys: string[]) {
+  async findManyByKeys(userId: string, keys: string[]) {
     const unique = [...new Set(keys.map((k) => k.trim()).filter(Boolean))];
     for (const k of unique) this.assertRangeKey(k);
     if (unique.length === 0) return [];
     const rows = await this.prisma.weeklyGoal.findMany({
-      where: { rangeKey: { in: unique } },
+      where: {
+        userId,
+        rangeKey: { in: unique },
+      },
     });
     const byKey = new Map(rows.map((r) => [r.rangeKey, r.body]));
     return unique.map((rangeKey) => ({
@@ -30,26 +33,28 @@ export class WeeklyGoalService {
     }));
   }
 
-  async getOne(rangeKey: string) {
+  async getOne(userId: string, rangeKey: string) {
     this.assertRangeKey(rangeKey);
     const row = await this.prisma.weeklyGoal.findUnique({
-      where: { rangeKey },
+      where: { userId_rangeKey: { userId, rangeKey } },
     });
     return { rangeKey, body: row?.body ?? "" };
   }
 
-  async upsert(rangeKey: string, body: string) {
+  async upsert(userId: string, rangeKey: string, body: string) {
     this.assertRangeKey(rangeKey);
     const row = await this.prisma.weeklyGoal.upsert({
-      where: { rangeKey },
-      create: { rangeKey, body },
+      where: { userId_rangeKey: { userId, rangeKey } },
+      create: { userId, rangeKey, body },
       update: { body },
     });
     return { rangeKey: row.rangeKey, body: row.body };
   }
 
-  async remove(rangeKey: string) {
+  async remove(userId: string, rangeKey: string) {
     this.assertRangeKey(rangeKey);
-    await this.prisma.weeklyGoal.deleteMany({ where: { rangeKey } });
+    await this.prisma.weeklyGoal.deleteMany({
+      where: { userId, rangeKey },
+    });
   }
 }

@@ -1,24 +1,4 @@
-function getApiBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL;
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw.replace(/\/$/, "");
-  }
-  return "http://localhost:3001";
-}
-
-async function parseErrorMessage(res: Response): Promise<string> {
-  try {
-    const body: unknown = await res.json();
-    if (body && typeof body === "object" && "message" in body) {
-      const msg = (body as { message: unknown }).message;
-      if (Array.isArray(msg)) return msg.map(String).join(", ");
-      if (typeof msg === "string") return msg;
-    }
-  } catch {
-    /* ignore */
-  }
-  return res.statusText || "Request failed";
-}
+import { apiFetch, getApiBaseUrl, parseErrorMessage } from "@/lib/api/client";
 
 export type CalendarMemoDto = {
   id: string;
@@ -30,8 +10,8 @@ export type CalendarMemoDto = {
 };
 
 export async function fetchMemosInRange(from: string, to: string): Promise<CalendarMemoDto[]> {
-  const url = `${getApiBaseUrl()}/api/memos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-  const res = await fetch(url);
+  const url = `${getApiBaseUrl()}/memos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error(await parseErrorMessage(res));
   return res.json() as Promise<CalendarMemoDto[]>;
 }
@@ -41,7 +21,7 @@ export async function upsertMemoRemote(body: {
   brief: string;
   detail: string;
 }): Promise<CalendarMemoDto> {
-  const res = await fetch(`${getApiBaseUrl()}/api/memos`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/memos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -51,9 +31,12 @@ export async function upsertMemoRemote(body: {
 }
 
 export async function deleteMemoRemote(dateKey: string): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/memos/${encodeURIComponent(dateKey)}`, {
-    method: "DELETE",
-  });
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/memos/${encodeURIComponent(dateKey)}`,
+    {
+      method: "DELETE",
+    },
+  );
   if (res.status === 204 || res.status === 404) return;
   if (!res.ok) throw new Error(await parseErrorMessage(res));
 }

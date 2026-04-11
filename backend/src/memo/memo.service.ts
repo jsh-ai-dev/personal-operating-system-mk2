@@ -12,19 +12,26 @@ import { PrismaService } from "../prisma/prisma.service";
 export class MemoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByRange(from: string, to: string): Promise<CalendarMemo[]> {
+  async findByRange(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<CalendarMemo[]> {
     if (from > to) {
       throw new BadRequestException("`from` must be <= `to`");
     }
     return this.prisma.calendarMemo.findMany({
-      where: { dateKey: { gte: from, lte: to } },
+      where: {
+        userId,
+        dateKey: { gte: from, lte: to },
+      },
       orderBy: { dateKey: "asc" },
     });
   }
 
-  async findOne(dateKey: string): Promise<CalendarMemo> {
+  async findOne(userId: string, dateKey: string): Promise<CalendarMemo> {
     const memo = await this.prisma.calendarMemo.findUnique({
-      where: { dateKey },
+      where: { userId_dateKey: { userId, dateKey } },
     });
     if (!memo) {
       throw new NotFoundException(`Memo not found for ${dateKey}`);
@@ -32,23 +39,42 @@ export class MemoService {
     return memo;
   }
 
-  async upsert(dateKey: string, brief: string, detail: string): Promise<CalendarMemo> {
+  async upsert(
+    userId: string,
+    dateKey: string,
+    brief: string,
+    detail: string,
+  ): Promise<CalendarMemo> {
     return this.prisma.calendarMemo.upsert({
-      where: { dateKey },
-      create: { dateKey, brief, detail },
+      where: { userId_dateKey: { userId, dateKey } },
+      create: { userId, dateKey, brief, detail },
       update: { brief, detail },
     });
   }
 
-  async createFromBody(dateKey: string, brief?: string, detail?: string): Promise<CalendarMemo> {
-    return this.upsert(dateKey, brief ?? "", detail ?? "");
+  async createFromBody(
+    userId: string,
+    dateKey: string,
+    brief?: string,
+    detail?: string,
+  ): Promise<CalendarMemo> {
+    return this.upsert(userId, dateKey, brief ?? "", detail ?? "");
   }
 
-  async replace(dateKey: string, brief?: string, detail?: string): Promise<CalendarMemo> {
-    return this.upsert(dateKey, brief ?? "", detail ?? "");
+  async replace(
+    userId: string,
+    dateKey: string,
+    brief?: string,
+    detail?: string,
+  ): Promise<CalendarMemo> {
+    return this.upsert(userId, dateKey, brief ?? "", detail ?? "");
   }
 
-  async patch(dateKey: string, dto: PatchMemoDto): Promise<CalendarMemo> {
+  async patch(
+    userId: string,
+    dateKey: string,
+    dto: PatchMemoDto,
+  ): Promise<CalendarMemo> {
     const data: Prisma.CalendarMemoUpdateInput = {};
     if (dto.brief !== undefined) data.brief = dto.brief;
     if (dto.detail !== undefined) data.detail = dto.detail;
@@ -57,7 +83,7 @@ export class MemoService {
     }
     try {
       return await this.prisma.calendarMemo.update({
-        where: { dateKey },
+        where: { userId_dateKey: { userId, dateKey } },
         data,
       });
     } catch {
@@ -65,9 +91,11 @@ export class MemoService {
     }
   }
 
-  async remove(dateKey: string): Promise<void> {
+  async remove(userId: string, dateKey: string): Promise<void> {
     try {
-      await this.prisma.calendarMemo.delete({ where: { dateKey } });
+      await this.prisma.calendarMemo.delete({
+        where: { userId_dateKey: { userId, dateKey } },
+      });
     } catch {
       throw new NotFoundException(`Memo not found for ${dateKey}`);
     }

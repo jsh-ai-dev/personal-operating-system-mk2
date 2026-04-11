@@ -14,26 +14,28 @@ export class MonthlyGoalService {
     }
   }
 
-  async getOne(yearMonth: string) {
+  async getOne(userId: string, yearMonth: string) {
     this.assertYearMonth(yearMonth);
     const row = await this.prisma.monthlyGoal.findUnique({
-      where: { yearMonth },
+      where: { userId_yearMonth: { userId, yearMonth } },
     });
     return { yearMonth, body: row?.body ?? "" };
   }
 
-  async upsert(yearMonth: string, body: string) {
+  async upsert(userId: string, yearMonth: string, body: string) {
     this.assertYearMonth(yearMonth);
     const row = await this.prisma.monthlyGoal.upsert({
-      where: { yearMonth },
-      create: { yearMonth, body },
+      where: { userId_yearMonth: { userId, yearMonth } },
+      create: { userId, yearMonth, body },
       update: { body },
     });
     return { yearMonth: row.yearMonth, body: row.body };
   }
 
-  async remove(yearMonth: string) {
+  async remove(userId: string, yearMonth: string) {
     this.assertYearMonth(yearMonth);
-    await this.prisma.monthlyGoal.deleteMany({ where: { yearMonth } });
+    await this.prisma.monthlyGoal.deleteMany({
+      where: { userId, yearMonth },
+    });
   }
 }

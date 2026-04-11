@@ -33,6 +33,10 @@ describe("Health (e2e)", () => {
         upsert: async () => ({}),
         deleteMany: async () => ({ count: 0 }),
       },
+      user: {
+        findUnique: async () => null,
+        create: async () => ({}),
+      },
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

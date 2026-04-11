@@ -9,6 +9,7 @@ import {
   Query,
 } from "@nestjs/common";
 
+import { CurrentUserId } from "../common/decorators/current-user.decorator";
 import { UpsertWeeklyGoalBodyDto } from "./dto/upsert-weekly-goal-body.dto";
 import { WeeklyGoalService } from "./weekly-goal.service";
 
@@ -17,29 +18,36 @@ export class WeeklyGoalController {
   constructor(private readonly weeklyGoalService: WeeklyGoalService) {}
 
   @Get("batch")
-  findBatch(@Query("keys") keys: string | undefined) {
+  findBatch(
+    @CurrentUserId() userId: string,
+    @Query("keys") keys: string | undefined,
+  ) {
     const raw = keys?.trim() ?? "";
     if (raw === "") return Promise.resolve([]);
     const list = raw.split(",").map((k) => k.trim()).filter(Boolean);
-    return this.weeklyGoalService.findManyByKeys(list);
+    return this.weeklyGoalService.findManyByKeys(userId, list);
   }
 
   @Get(":rangeKey")
-  getOne(@Param("rangeKey") rangeKey: string) {
-    return this.weeklyGoalService.getOne(rangeKey);
+  getOne(@CurrentUserId() userId: string, @Param("rangeKey") rangeKey: string) {
+    return this.weeklyGoalService.getOne(userId, rangeKey);
   }
 
   @Put(":rangeKey")
   put(
+    @CurrentUserId() userId: string,
     @Param("rangeKey") rangeKey: string,
     @Body() dto: UpsertWeeklyGoalBodyDto,
   ) {
-    return this.weeklyGoalService.upsert(rangeKey, dto.body);
+    return this.weeklyGoalService.upsert(userId, rangeKey, dto.body);
   }
 
   @Delete(":rangeKey")
   @HttpCode(204)
-  async remove(@Param("rangeKey") rangeKey: string) {
-    await this.weeklyGoalService.remove(rangeKey);
+  async remove(
+    @CurrentUserId() userId: string,
+    @Param("rangeKey") rangeKey: string,
+  ) {
+    await this.weeklyGoalService.remove(userId, rangeKey);
   }
 }
