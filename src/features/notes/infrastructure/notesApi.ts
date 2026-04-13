@@ -175,9 +175,25 @@ function parseFilenameFromContentDisposition(header: string | null): string | nu
   return null;
 }
 
-/** 브라우저에서 원본(.txt 내보내기 또는 PDF 바이트)을 저장합니다. */
+/** 원본 파일 URL (같은 출처, 쿠키 포함). `inline`이면 브라우저 탭에서 열기에 적합한 응답입니다. */
+export type NoteAttachmentDisposition = "attachment" | "inline";
+
+export function getNoteAttachmentUrl(
+  id: string,
+  disposition: NoteAttachmentDisposition = "attachment",
+): string {
+  const base = `${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/download`;
+  return disposition === "inline" ? `${base}?inline=true` : base;
+}
+
+/** PDF·텍스트 원본을 새 탭에서 연다 (서버는 Content-Disposition: inline). */
+export function openNoteAttachmentInNewTab(id: string): void {
+  window.open(getNoteAttachmentUrl(id, "inline"), "_blank", "noopener,noreferrer");
+}
+
+/** 브라우저에서 원본을 파일로 저장한다 (Content-Disposition: attachment). */
 export async function downloadNoteAttachment(id: string): Promise<void> {
-  const res = await apiFetch(`${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/download`);
+  const res = await apiFetch(getNoteAttachmentUrl(id, "attachment"));
   if (!res.ok) throw new Error(await parseErrorMessage(res));
   const blob = await res.blob();
   const name = parseFilenameFromContentDisposition(res.headers.get("content-disposition")) ?? `note-${id}`;

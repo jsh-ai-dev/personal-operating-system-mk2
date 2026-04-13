@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { deleteNote, downloadNoteAttachment, fetchNote, setBookmark } from "@/features/notes/infrastructure/notesApi";
+import {
+  deleteNote,
+  downloadNoteAttachment,
+  fetchNote,
+  openNoteAttachmentInNewTab,
+  setBookmark,
+} from "@/features/notes/infrastructure/notesApi";
 import { NoteAiSummarySection } from "@/features/notes/ui/NoteAiSummarySection";
 import { NoteForm } from "@/features/notes/ui/NoteForm";
 import styles from "@/features/notes/ui/notes.module.css";
@@ -93,14 +99,23 @@ export function NoteDetail({ id }: Props) {
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {showDownload ? (
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  disabled={downloading}
-                  onClick={() => void onDownloadOriginal()}
-                >
-                  {downloading ? "받는 중…" : "원본 다운로드"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => openNoteAttachmentInNewTab(note.id)}
+                  >
+                    원본 보기
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    disabled={downloading}
+                    onClick={() => void onDownloadOriginal()}
+                  >
+                    {downloading ? "받는 중…" : "원본 다운로드"}
+                  </button>
+                </>
               ) : null}
               <button
                 type="button"
