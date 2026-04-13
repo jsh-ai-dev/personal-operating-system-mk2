@@ -196,6 +196,11 @@ export function NotesList() {
               </div>
               <p className={styles.excerpt}>{excerpt(note.content)}</p>
               <div className={styles.meta}>
+                {note.hasStoredFile ? (
+                  <span className={`${styles.badge} ${styles.badgeFile}`} title="원본 파일이 서버에 저장됨">
+                    PDF
+                  </span>
+                ) : null}
                 <span
                   className={`${styles.badge} ${note.visibility === "PUBLIC" ? styles.badgePublic : styles.badgePrivate}`}
                 >

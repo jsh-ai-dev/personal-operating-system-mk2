@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { deleteNote, fetchNote, setBookmark } from "@/features/notes/infrastructure/notesApi";
+import { deleteNote, downloadNoteAttachment, fetchNote, setBookmark } from "@/features/notes/infrastructure/notesApi";
+import { NoteAiSummarySection } from "@/features/notes/ui/NoteAiSummarySection";
 import { NoteForm } from "@/features/notes/ui/NoteForm";
 import styles from "@/features/notes/ui/notes.module.css";
 
@@ -15,6 +16,7 @@ export function NoteDetail({ id }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<Awaited<ReturnType<typeof fetchNote>> | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +48,20 @@ export function NoteDetail({ id }: Props) {
     }
   }
 
+  async function onDownloadOriginal() {
+    if (!note) return;
+    setDownloading(true);
+    try {
+      await downloadNoteAttachment(note.id);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "다운로드하지 못했습니다.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  const showDownload = Boolean(note?.originalFileName ?? note?.hasStoredFile);
+
   async function onBookmark() {
     if (!note) return;
     try {
@@ -76,6 +92,16 @@ export function NoteDetail({ id }: Props) {
               <p className={styles.subtitle}>저장하면 Spring API에 반영됩니다.</p>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {showDownload ? (
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  disabled={downloading}
+                  onClick={() => void onDownloadOriginal()}
+                >
+                  {downloading ? "받는 중…" : "원본 다운로드"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={styles.secondaryButton}
@@ -89,6 +115,7 @@ export function NoteDetail({ id }: Props) {
               </button>
             </div>
           </header>
+          <NoteAiSummarySection note={note} onNoteUpdated={(n) => setNote(n)} />
           <NoteForm mode="edit" note={note} onUpdated={(n) => setNote(n)} />
         </>
       ) : null}

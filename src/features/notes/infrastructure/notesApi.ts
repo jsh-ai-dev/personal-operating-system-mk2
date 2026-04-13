@@ -13,6 +13,12 @@ export type NoteDto = {
   visibility: Visibility;
   tags: string[];
   bookmarked: boolean;
+  /** 서버에 저장된 AI 요약 (없으면 null/undefined) */
+  aiSummary?: string | null;
+  /** PDF 등 원본 바이트를 서버에 둔 노트 */
+  hasStoredFile?: boolean;
+  /** 파일 업로드로 만들었을 때 원본 파일명 */
+  originalFileName?: string | null;
 };
 
 export type NoteListSort = "recent" | "title" | "relevance";
@@ -55,6 +61,9 @@ function parseNote(raw: unknown): NoteDto {
     visibility: o.visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
     tags: toTags(o.tags),
     bookmarked: Boolean(o.bookmarked),
+    aiSummary: o.aiSummary != null ? String(o.aiSummary) : null,
+    hasStoredFile: Boolean(o.hasStoredFile),
+    originalFileName: o.originalFileName != null ? String(o.originalFileName) : null,
   };
 }
 
@@ -136,6 +145,51 @@ export async function createNote(body: CreateNoteBody): Promise<NoteDto> {
   return parseNote(data);
 }
 
+export async function uploadNoteFile(file: File): Promise<NoteDto> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await apiFetch(`${getNotesApiBaseUrl()}/v1/notes/upload`, {
+    method: "POST",
+    body: fd,
+  });
+  if (!res.ok) throw new Error(await parseErrorMessage(res));
+  const data: unknown = await res.json();
+  return parseNote(data);
+}
+
+function parseFilenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const star = /filename\*=(?:UTF-8''|)([^;\n]+)/i.exec(header);
+  if (star?.[1]) {
+    const raw = star[1].trim().replace(/^"(.*)"$/, "$1");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  const q = /filename="([^"]+)"/i.exec(header);
+  if (q?.[1]) return q[1].trim();
+  const plain = /filename=([^;\n]+)/i.exec(header);
+  if (plain?.[1]) return plain[1].trim().replace(/^"(.*)"$/, "$1");
+  return null;
+}
+
+/** 브라우저에서 원본(.txt 내보내기 또는 PDF 바이트)을 저장합니다. */
+export async function downloadNoteAttachment(id: string): Promise<void> {
+  const res = await apiFetch(`${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/download`);
+  if (!res.ok) throw new Error(await parseErrorMessage(res));
+  const blob = await res.blob();
+  const name = parseFilenameFromContentDisposition(res.headers.get("content-disposition")) ?? `note-${id}`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.rel = "noopener";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export type UpdateNoteBody = CreateNoteBody;
 
 export async function updateNote(id: string, body: UpdateNoteBody): Promise<NoteDto> {
@@ -164,6 +218,45 @@ export async function deleteNote(id: string): Promise<void> {
 export async function setBookmark(id: string, bookmarked: boolean): Promise<NoteDto> {
   const path = `${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/bookmark`;
   const res = await apiFetch(path, { method: bookmarked ? "POST" : "DELETE" });
+  if (!res.ok) throw new Error(await parseErrorMessage(res));
+  const data: unknown = await res.json();
+  return parseNote(data);
+}
+
+export type SummaryModelTier = "flash" | "pro";
+
+export type GenerateSummaryResult = {
+  summary: string;
+  modelTier: string;
+  originalLength: number;
+};
+
+export async function generateNoteSummary(
+  id: string,
+  modelTier: SummaryModelTier = "flash",
+): Promise<GenerateSummaryResult> {
+  const res = await apiFetch(`${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/summary/generate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ modelTier }),
+  });
+  if (!res.ok) throw new Error(await parseErrorMessage(res));
+  const data: unknown = await res.json();
+  if (!data || typeof data !== "object") throw new Error("Invalid summary response");
+  const o = data as Record<string, unknown>;
+  return {
+    summary: String(o.summary ?? ""),
+    modelTier: String(o.modelTier ?? "flash"),
+    originalLength: Number(o.originalLength ?? 0),
+  };
+}
+
+export async function saveNoteSummary(id: string, summary: string): Promise<NoteDto> {
+  const res = await apiFetch(`${getNotesApiBaseUrl()}/v1/notes/${encodeURIComponent(id)}/summary/save`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ summary }),
+  });
   if (!res.ok) throw new Error(await parseErrorMessage(res));
   const data: unknown = await res.json();
   return parseNote(data);
