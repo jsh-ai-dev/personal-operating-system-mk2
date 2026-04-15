@@ -75,7 +75,17 @@ src/
 npm install
 ```
 
-### 2) 개발 서버 실행
+### 2) mk2 전용 인프라(PostgreSQL/Redis) 실행
+
+```bash
+docker compose up -d
+```
+
+- `compose.yaml`은 mk2 전용 컨테이너를 사용합니다.
+- PostgreSQL: `localhost:5433`
+- Redis: `localhost:6380`
+
+### 3) 개발 서버 실행
 
 ```bash
 npm run dev
@@ -83,7 +93,7 @@ npm run dev
 
 브라우저에서 `http://localhost:3000` 접속
 
-### 3) 품질 검사
+### 4) 품질 검사
 
 ```bash
 npm run lint

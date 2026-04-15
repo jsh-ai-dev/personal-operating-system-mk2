@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: personal-operating-system-mk2-postgres
+    environment:
+      POSTGRES_DB: ${MK2_DB_NAME:-pos_mk2}
+      POSTGRES_USER: ${MK2_DB_USERNAME:-pos}
+      POSTGRES_PASSWORD: ${MK2_DB_PASSWORD:-pos}
+      TZ: ${MK2_DB_TZ:-Asia/Seoul}
+    ports:
+      - "5433:5432"
+    volumes:
+      - personal-operating-system-mk2-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: personal-operating-system-mk2-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - personal-operating-system-mk2-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  personal-operating-system-mk2-postgres-data:
+  personal-operating-system-mk2-redis-data:
