@@ -93,6 +93,66 @@ npm run dev
 
 브라우저에서 `http://localhost:3000` 접속
 
+프론트/백엔드를 분리해서 개발하려면 각각 실행합니다.
+
+```bash
+npm run dev:web
+npm run dev:api
+```
+
+## 프론트/백 분리 실행 (Docker)
+
+mk2는 인프라(DB/Redis)와 앱(Web/API)을 별도 서비스로 실행할 수 있습니다.
+
+1) mk2 인프라 기동 (PostgreSQL/Redis)
+
+```bash
+npm run docker:up
+```
+
+2) mk2 앱 서비스 기동 (Web/API)
+
+```bash
+npm run docker:up:split
+```
+
+실행 후 엔드포인트:
+
+- Web: `http://localhost:3000`
+- API: `http://localhost:3001`
+
+정리:
+
+```bash
+npm run docker:down:split
+```
+
+## 실행 모드 요약 (헷갈릴 때 이것만 보면 됨)
+
+### 1) 개발 모드 (일상 작업용, 추천)
+
+- DB/Redis만 Docker로 실행
+- Web/API는 로컬 dev 서버로 실행(HMR, watch)
+
+```bash
+npm run docker:up
+npm run dev:all
+```
+
+> 이 모드에서는 `npm run docker:up:split`을 실행하지 않습니다.
+
+### 2) 분리 배포 연습 모드 (운영 흉내)
+
+- DB/Redis + Web/API를 모두 Docker 컨테이너로 실행
+- 이때는 로컬 dev 서버를 따로 띄우지 않음
+
+```bash
+npm run docker:up
+npm run docker:up:split
+```
+
+> 이 모드에서는 `npm run dev:all`을 실행하지 않습니다.
+
 ### 4) 품질 검사
 
 ```bash

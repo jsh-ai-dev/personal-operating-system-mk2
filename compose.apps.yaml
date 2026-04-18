@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: personal-operating-system-mk2-api
+    environment:
+      DATABASE_URL: postgresql://pos:pos0401P*@postgres:5432/pos_mk2?schema=public
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-change-this-for-real-env}
+      JWT_EXPIRES_IN: 7d
+      REDIS_URL: redis://redis:6379
+      REDIS_KEY_PREFIX: pos:mk2
+      THROTTLE_GLOBAL_LIMIT: 200
+      THROTTLE_GLOBAL_TTL_SEC: 60
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: personal-operating-system-mk2-web
+    environment:
+      BACKEND_URL: http://api:3001
+      NOTES_SERVICE_URL: http://host.docker.internal:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
