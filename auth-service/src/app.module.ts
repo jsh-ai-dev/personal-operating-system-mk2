@@ -14,19 +14,17 @@ import {
 import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
 import Redis from "ioredis";
 
-import { JwtAuthModule } from "./auth/jwt-auth.module";
+import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard";
-import { GoalsModule } from "./goals/goals.module";
-import { HealthModule } from "./health/health.module";
-import { MemoModule } from "./memo/memo.module";
 import { PrismaModule } from "./prisma/prisma.module";
 
-/** 루트에서 `npm run dev:api` 할 때와 `backend`에서 실행할 때 모두 `.env`를 찾습니다. */
 function resolveEnvFilePath(): string {
   const inCwd = join(process.cwd(), ".env");
-  const inBackend = join(process.cwd(), "backend", ".env");
+  const inParent = join(process.cwd(), "..", ".env");
+  const inBackend = join(process.cwd(), "..", "backend", ".env");
   if (existsSync(inCwd)) return inCwd;
   if (existsSync(inBackend)) return inBackend;
+  if (existsSync(inParent)) return inParent;
   return inCwd;
 }
 
@@ -75,10 +73,7 @@ function resolveEnvFilePath(): string {
       },
     }),
     PrismaModule,
-    JwtAuthModule,
-    HealthModule,
-    MemoModule,
-    GoalsModule,
+    AuthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

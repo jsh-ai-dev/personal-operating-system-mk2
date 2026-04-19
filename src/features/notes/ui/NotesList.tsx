@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { NoteDto, NoteListSort } from "@/features/notes/infrastructure/notesApi";
 import { fetchNotesList, setBookmark } from "@/features/notes/infrastructure/notesApi";
@@ -16,7 +16,8 @@ function excerpt(text: string, max = 180): string {
 
 /** 0-based 인덱스 버튼 목록 (최대 7개 창) */
 function visiblePageIndices(totalPages: number, current0: number): number[] {
-  if (totalPages <= 0) return [];
+  if (!Number.isFinite(totalPages) || totalPages <= 0) return [];
+  if (!Number.isFinite(current0)) return [];
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i);
   }
@@ -46,45 +47,52 @@ export function NotesList() {
   const [hasNext, setHasNext] = useState(false);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedKeyword(keyword.trim()), 320);
+    const t = window.setTimeout(() => {
+      const next = keyword.trim();
+      setDebouncedKeyword((prev) => (prev === next ? prev : next));
+    }, 320);
     return () => window.clearTimeout(t);
   }, [keyword]);
 
   useEffect(() => {
-    setPageIndex(0);
+    setPageIndex((p) => (p === 0 ? p : 0));
   }, [debouncedKeyword, bookmarkedOnly, sort, pageSize]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetchNotesList({
-        keyword: debouncedKeyword || undefined,
-        bookmarkedOnly,
-        sort,
-        page: pageIndex,
-        size: pageSize,
-      });
-      setNotes(result.notes);
-      setTotalElements(result.totalElements);
-      setTotalPages(result.totalPages);
-      setHasPrevious(result.hasPrevious);
-      setHasNext(result.hasNext);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "목록을 불러오지 못했습니다.");
-      setNotes([]);
-      setTotalElements(0);
-      setTotalPages(0);
-      setHasPrevious(false);
-      setHasNext(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedKeyword, bookmarkedOnly, sort, pageIndex, pageSize]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await fetchNotesList({
+          keyword: debouncedKeyword || undefined,
+          bookmarkedOnly,
+          sort,
+          page: pageIndex,
+          size: pageSize,
+        });
+        if (!active) return;
+        setNotes(result.notes);
+        setTotalElements(result.totalElements);
+        setTotalPages(result.totalPages);
+        setHasPrevious(result.hasPrevious);
+        setHasNext(result.hasNext);
+      } catch (e) {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : "목록을 불러오지 못했습니다.");
+        setNotes([]);
+        setTotalElements(0);
+        setTotalPages(0);
+        setHasPrevious(false);
+        setHasNext(false);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [debouncedKeyword, bookmarkedOnly, sort, pageIndex, pageSize]);
 
   async function onToggleBookmark(note: NoteDto, next: boolean) {
     try {
@@ -104,7 +112,7 @@ export function NotesList() {
             Spring 노트 API와 연결됩니다. 서버가 꺼져 있으면 연결 오류가 날 수 있어요.
           </p>
         </div>
-        <Link href="/notes/new" className={styles.primaryButton}>
+        <Link prefetch={false} href="/notes/new" className={styles.primaryButton}>
           새 노트
         </Link>
       </header>
@@ -157,7 +165,11 @@ export function NotesList() {
         <p className={styles.loading}>불러오는 중…</p>
       ) : notes.length === 0 ? (
         <div className={styles.empty}>
-          노트가 없습니다. <Link href="/notes/new">새 노트</Link>를 만들거나 검색어를 바꿔 보세요.
+          노트가 없습니다.{" "}
+          <Link prefetch={false} href="/notes/new">
+            새 노트
+          </Link>
+          를 만들거나 검색어를 바꿔 보세요.
         </div>
       ) : (
         <>

@@ -1,19 +1,44 @@
+# apps: auth·api·web — `docker compose -f compose.yaml -f compose.apps.yaml up`
+#
+# auth·api 는 backend/.env 를 읽어 JWT_SECRET·THROTTLE 등을 로컬 `npm run dev:all` 과 동일하게 맞춥니다.
+# 아래 environment 는 컨테이너 네트워크용으로만 덮어씁니다 (DATABASE_URL, REDIS_URL, auth 의 AUTH_SERVICE_PORT 등).
+#
+# 주의: `npm run dev:all`(로컬 auth·api) 과 동시에 같은 포트의 auth·api 컨테이너를 띄우지 마세요.
+# 로컬 개발 시에는 보통 compose.yaml(postgres·redis)만 켜고 dev:all 을 씁니다.
+
 services:
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    container_name: personal-operating-system-mk2-auth
+    env_file:
+      - backend/.env
+    environment:
+      DATABASE_URL: postgresql://pos:pos0401P*@postgres:5432/pos_mk2?schema=public
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_PORT: 3002
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
     container_name: personal-operating-system-mk2-api
+    env_file:
+      - backend/.env
     environment:
       DATABASE_URL: postgresql://pos:pos0401P*@postgres:5432/pos_mk2?schema=public
+      REDIS_URL: redis://redis:6379
       PORT: 3001
       CORS_ORIGIN: http://localhost:3000
-      JWT_SECRET: ${JWT_SECRET:-change-this-for-real-env}
-      JWT_EXPIRES_IN: 7d
-      REDIS_URL: redis://redis:6379
-      REDIS_KEY_PREFIX: pos:mk2
-      THROTTLE_GLOBAL_LIMIT: 200
-      THROTTLE_GLOBAL_TTL_SEC: 60
     ports:
       - "3001:3001"
     depends_on:
@@ -29,8 +54,10 @@ services:
     container_name: personal-operating-system-mk2-web
     environment:
       BACKEND_URL: http://api:3001
+      AUTH_SERVICE_URL: http://auth:3002
       NOTES_SERVICE_URL: http://host.docker.internal:8080
     ports:
       - "3000:3000"
     depends_on:
       - api
+      - auth

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   deleteNote,
@@ -24,23 +24,27 @@ export function NoteDetail({ id }: Props) {
   const [note, setNote] = useState<Awaited<ReturnType<typeof fetchNote>> | null>(null);
   const [downloading, setDownloading] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const n = await fetchNote(id);
-      setNote(n);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "노트를 불러오지 못했습니다.");
-      setNote(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const n = await fetchNote(id);
+        if (!active) return;
+        setNote(n);
+      } catch (e) {
+        if (!active) return;
+        setError(e instanceof Error ? e.message : "노트를 불러오지 못했습니다.");
+        setNote(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   async function onDelete() {
     if (!note) return;
@@ -80,7 +84,7 @@ export function NoteDetail({ id }: Props) {
 
   return (
     <section className={styles.page} aria-label="노트 상세">
-      <Link href="/notes" className={styles.backLink}>
+      <Link prefetch={false} href="/notes" className={styles.backLink}>
         ← 노트 목록
       </Link>
 

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
-import { getBackendUrl } from "@/lib/server/backendUrl";
+import { getAuthServiceUrl } from "@/lib/server/authServiceUrl";
 
 /** Nest `POST /api/auth/sessions/revoke-all` — 모든 기기 세션 무효화 */
 export async function POST() {
@@ -13,7 +13,7 @@ export async function POST() {
 
   let backendRes: Response;
   try {
-    backendRes = await fetch(`${getBackendUrl()}/api/auth/sessions/revoke-all`, {
+    backendRes = await fetch(`${getAuthServiceUrl()}/api/auth/sessions/revoke-all`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
     });

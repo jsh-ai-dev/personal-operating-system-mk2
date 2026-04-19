@@ -52,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link
                 key={item.href}
+                prefetch={false}
                 href={item.href}
                 className={[styles.navLink, active ? styles.navLinkActive : ""]
                   .filter(Boolean)

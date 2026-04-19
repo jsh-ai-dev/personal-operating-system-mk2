@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
-import { getBackendUrl } from "@/lib/server/backendUrl";
+import { getAuthServiceUrl } from "@/lib/server/authServiceUrl";
 
 const MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
@@ -13,11 +13,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
   }
 
-  const res = await fetch(`${getBackendUrl()}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${getAuthServiceUrl()}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return NextResponse.json(
+      { message: "인증 서버에 연결할 수 없습니다. `npm run dev:auth` 또는 dev:all 로 auth-service(기본 3002)를 띄웠는지 확인하세요." },
+      { status: 502 },
+    );
+  }
 
   const data = (await res.json().catch(() => ({}))) as {
     accessToken?: string;

@@ -1,0 +1,17 @@
+// users 테이블만 사용 — 전체 스키마·마이그레이션은 ../backend/prisma 가 단일 소스입니다.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

@@ -2,13 +2,13 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
-import { getBackendUrl } from "@/lib/server/backendUrl";
+import { getAuthServiceUrl } from "@/lib/server/authServiceUrl";
 
 export async function POST() {
   const token = (await cookies()).get(AUTH_COOKIE_NAME)?.value;
   if (token) {
     try {
-      await fetch(`${getBackendUrl()}/api/auth/logout`, {
+      await fetch(`${getAuthServiceUrl()}/api/auth/logout`, {
         method: "POST",
         headers: { authorization: `Bearer ${token}` },
       });

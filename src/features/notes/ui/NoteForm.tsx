@@ -52,7 +52,6 @@ export function NoteForm(props: Props) {
       } else {
         const updated = await updateNote(props.note.id, { title, content, visibility, tags });
         props.onUpdated?.(updated);
-        router.refresh();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "저장하지 못했습니다.");
