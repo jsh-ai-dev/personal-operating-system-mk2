@@ -42,6 +42,7 @@ yarn-error.log*
 .env.*.local
 !.env.example
 backend/.env
+k8s/base/secret.yaml
 
 # vercel
 .vercel

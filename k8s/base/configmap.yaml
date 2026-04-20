@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mk2-config
+data:
+  MK2_DB_NAME: "pos_mk2"
+  REDIS_URL: "redis://mk2-redis:6379"
+  REDIS_KEY_PREFIX: "pos:mk2"
+  THROTTLE_GLOBAL_LIMIT: "200"
+  THROTTLE_GLOBAL_TTL_SEC: "60"
+  CORS_ORIGIN: "http://mk2.local"
+  PORT: "3001"
+  AUTH_SERVICE_PORT: "3002"
+  BACKEND_URL: "http://mk2-api:3001"
+  AUTH_SERVICE_URL: "http://mk2-auth:3002"
+  NOTES_SERVICE_URL: "http://mk1-app.pos-mk1.svc.cluster.local:8080"
+  JWT_EXPIRES_IN: "7d"

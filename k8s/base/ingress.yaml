@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mk2-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: mk2.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mk2-web
+                port:
+                  number: 3000
