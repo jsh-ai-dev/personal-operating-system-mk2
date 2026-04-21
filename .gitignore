@@ -43,6 +43,7 @@ yarn-error.log*
 !.env.example
 backend/.env
 k8s/base/secret.yaml
+k8s/overlays/aws/secret.aws.yaml
 
 # vercel
 .vercel

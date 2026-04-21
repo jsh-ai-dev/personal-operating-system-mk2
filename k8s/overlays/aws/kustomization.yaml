@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pos-mk2
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmap.yaml
+  - ../../base/auth.yaml
+  - ../../base/api.yaml
+  - ../../base/web.yaml
+  - ../../base/ingress.yaml
+  - secret.aws.yaml
+
+patches:
+  - path: configmap.aws.patch.yaml
+  - path: ingress.aws.patch.yaml
+
+images:
+  - name: personal-operating-system-mk2-web
+    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-web
+    newTag: latest
+  - name: personal-operating-system-mk2-api
+    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-api
+    newTag: latest
+  - name: personal-operating-system-mk2-auth
+    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-auth
+    newTag: latest
