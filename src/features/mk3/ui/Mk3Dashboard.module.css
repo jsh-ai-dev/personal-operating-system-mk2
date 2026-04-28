@@ -1,15 +1,20 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 980px;
+  gap: 20px;
+  max-width: 1100px;
+  padding: 8px 0 24px;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .title {
@@ -23,6 +28,26 @@
   margin: 6px 0 0;
   color: #6b7280;
   font-size: 14px;
+}
+
+.statusRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .actions {
@@ -61,8 +86,9 @@
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 0.05);
 }
 
 .cardTitle {
@@ -70,6 +96,14 @@
   font-size: 16px;
   font-weight: 700;
   color: #111827;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .statusOk {
@@ -89,13 +123,59 @@
 }
 
 .jsonBox {
-  margin: 0;
-  background: #0b1220;
-  color: #d1d5db;
+  margin: 8px 0 0;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 12px;
   font-size: 12px;
   overflow: auto;
+}
+
+.resultDetails {
+  margin-top: 8px;
+}
+
+.resultSummary {
+  cursor: pointer;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.splitLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.detailPane {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.detailTitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.gridOne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
 .chatControls {
@@ -173,4 +253,18 @@
 .messageItemActive {
   border-color: #0ea5e9;
   background: #ecfeff;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .gridTwo {
+    grid-template-columns: 1fr;
+  }
+
+  .splitLayout {
+    grid-template-columns: 1fr;
+  }
 }

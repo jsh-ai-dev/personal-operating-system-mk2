@@ -14,22 +14,38 @@ type Props = {
 };
 
 export function Mk3DashboardView({ vm }: Props) {
+  const healthBadge = vm.health.status === 200 ? "연결 정상" : vm.health.loading ? "확인 중" : "미확인";
+  const modelBadge = vm.providerModels.length > 0 ? `${vm.providerModels.length}개 모델` : "모델 미로드";
+  const serviceBadge = vm.aiServiceList.length > 0 ? `${vm.aiServiceList.length}개 서비스` : "서비스 없음";
+
   return (
-    <section className={styles.page} aria-label="mk3 연결 점검">
+    <section className={styles.page} aria-label="mk3 서비스 대시보드">
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>mk3 연동 점검</h1>
+          <h1 className={styles.title}>mk3 서비스 대시보드</h1>
           <p className={styles.subtitle}>
-            mk2 로그인 세션으로 mk3 API를 프록시 호출해, 인증/연결 상태를 먼저 확인합니다.
+            mk2 세션 기반으로 mk3 기능을 한 화면에서 실행하고 결과를 관리합니다.
           </p>
+          <div className={styles.statusRow}>
+            <span className={styles.badge}>Health: {healthBadge}</span>
+            <span className={styles.badge}>Provider: {vm.provider}</span>
+            <span className={styles.badge}>Models: {modelBadge}</span>
+            <span className={styles.badge}>AI Services: {serviceBadge}</span>
+          </div>
         </div>
         <HeaderActions vm={vm} />
       </header>
-      <HealthAndModelsCards vm={vm} />
-      <ProviderChatCard vm={vm} />
-      <ConversationsCard vm={vm} />
-      <AiServicesCard vm={vm} />
-      <ImportAndScraperCards vm={vm} />
+      <div className={styles.gridTwo}>
+        <HealthAndModelsCards vm={vm} />
+        <ProviderChatCard vm={vm} />
+      </div>
+      <div className={styles.gridOne}>
+        <ConversationsCard vm={vm} />
+        <AiServicesCard vm={vm} />
+      </div>
+      <div className={styles.gridTwo}>
+        <ImportAndScraperCards vm={vm} />
+      </div>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Mk3DashboardVM } from "@/features/mk3/application/useMk3Dashboard";
+import { ResultPanel } from "@/features/mk3/ui/components/ResultPanel";
 import styles from "@/features/mk3/ui/Mk3Dashboard.module.css";
 
 type Props = { vm: Mk3DashboardVM };
@@ -8,14 +9,16 @@ type Props = { vm: Mk3DashboardVM };
 export function ConversationsCard({ vm }: Props) {
   return (
     <article className={styles.card}>
-      <h2 className={styles.cardTitle}>5) Conversations / Messages</h2>
+      <div className={styles.cardHeader}>
+        <h2 className={styles.cardTitle}>대화 기록 관리</h2>
+      </div>
       <p className={styles.hint}>대화 목록을 불러와 선택하면, 해당 대화 메시지와 요약/퀴즈 생성 흐름을 테스트할 수 있습니다.</p>
       <div className={styles.actions}>
         <button type="button" className={styles.button} disabled={vm.conversations.loading} onClick={() => void vm.loadConversations()}>
-          conversations 조회
+          대화 목록 새로고침
         </button>
         <button type="button" className={styles.button} disabled={vm.messages.loading} onClick={() => void vm.loadMessagesForCurrentConversation()}>
-          messages 조회
+          메시지 불러오기
         </button>
         <button type="button" className={styles.button} disabled={vm.summaryResult.loading} onClick={() => void vm.generateSummary()}>
           요약 생성
@@ -24,31 +27,42 @@ export function ConversationsCard({ vm }: Props) {
           퀴즈 생성
         </button>
       </div>
-      {vm.conversationList.length > 0 ? (
-        <div className={styles.conversationList}>
-          {vm.conversationList.slice(0, 30).map((conv) => (
-            <button
-              key={conv.id}
-              type="button"
-              className={`${styles.conversationItem} ${vm.conversationId === conv.id ? styles.conversationItemActive : ""}`}
-              onClick={() => vm.setConversationId(conv.id)}
-            >
-              <strong>{conv.title ?? "(untitled)"}</strong>
-              <span>{conv.model ?? "-"}</span>
-            </button>
-          ))}
+      <div className={styles.splitLayout}>
+        <div>
+          {vm.conversationList.length > 0 ? (
+            <div className={styles.conversationList}>
+              {vm.conversationList.slice(0, 30).map((conv) => (
+                <button
+                  key={conv.id}
+                  type="button"
+                  className={`${styles.conversationItem} ${vm.conversationId === conv.id ? styles.conversationItemActive : ""}`}
+                  onClick={() => vm.setConversationId(conv.id)}
+                >
+                  <strong>{conv.title ?? "(untitled)"}</strong>
+                  <span>{conv.model ?? "-"}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
-      ) : null}
-      <div className={styles.chatControls}>
-        <button type="button" className={styles.button} disabled={vm.conversationPatchResult.loading} onClick={() => void vm.setConversationHidden(true)}>
-          대화 숨김
-        </button>
-        <button type="button" className={styles.button} disabled={vm.conversationPatchResult.loading} onClick={() => void vm.setConversationHidden(false)}>
-          대화 숨김 해제
-        </button>
+        <div className={styles.detailPane}>
+          <h3 className={styles.detailTitle}>선택된 대화</h3>
+          <p className={styles.hint}>{vm.conversationId ?? "선택된 대화가 없습니다."}</p>
+          <div className={styles.chatControls}>
+            <button type="button" className={styles.button} disabled={vm.conversationPatchResult.loading} onClick={() => void vm.setConversationHidden(true)}>
+              대화 숨김
+            </button>
+            <button type="button" className={styles.button} disabled={vm.conversationPatchResult.loading} onClick={() => void vm.setConversationHidden(false)}>
+              대화 숨김 해제
+            </button>
+          </div>
+          <ResultPanel
+            title="대화 상태 변경 응답 보기"
+            body={vm.conversationPatchResult.body}
+            error={vm.conversationPatchResult.error}
+          />
+        </div>
       </div>
-      {vm.conversationPatchResult.error ? <p className={styles.statusBad}>{vm.conversationPatchResult.error}</p> : null}
-      {vm.conversationPatchResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.conversationPatchResult.body, null, 2)}</pre> : null}
       {vm.messageList.length > 0 ? (
         <div className={styles.messageList}>
           {vm.messageList.slice(0, 30).map((msg) => (
@@ -79,15 +93,10 @@ export function ConversationsCard({ vm }: Props) {
           메시지 숨김 해제
         </button>
       </div>
-      {vm.messagePatchResult.error ? <p className={styles.statusBad}>{vm.messagePatchResult.error}</p> : null}
-      {vm.messagePatchResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.messagePatchResult.body, null, 2)}</pre> : null}
-      {vm.conversations.error ? <p className={styles.statusBad}>{vm.conversations.error}</p> : null}
-      {vm.messages.error ? <p className={styles.statusBad}>{vm.messages.error}</p> : null}
-      {vm.summaryResult.error ? <p className={styles.statusBad}>{vm.summaryResult.error}</p> : null}
-      {vm.quizResult.error ? <p className={styles.statusBad}>{vm.quizResult.error}</p> : null}
-      {vm.messages.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.messages.body, null, 2)}</pre> : null}
-      {vm.summaryResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.summaryResult.body, null, 2)}</pre> : null}
-      {vm.quizResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.quizResult.body, null, 2)}</pre> : null}
+      <ResultPanel title="메시지 수정 응답 보기" body={vm.messagePatchResult.body} error={vm.messagePatchResult.error} />
+      <ResultPanel title="대화 목록/메시지 응답 보기" body={vm.messages.body} error={vm.conversations.error ?? vm.messages.error} />
+      <ResultPanel title="요약 결과 보기" body={vm.summaryResult.body} error={vm.summaryResult.error} />
+      <ResultPanel title="퀴즈 결과 보기" body={vm.quizResult.body} error={vm.quizResult.error} />
     </article>
   );
 }

@@ -14,10 +14,10 @@ export function HeaderActions({ vm }: Props) {
           checked={vm.includeHiddenConversations}
           onChange={(e) => vm.setIncludeHiddenConversations(e.target.checked)}
         />
-        hidden 포함
+        숨김 대화 포함
       </label>
       <button type="button" className={styles.button} disabled={vm.health.loading} onClick={() => void vm.fetchHealth()}>
-        health
+        연결 확인
       </button>
       <button
         type="button"
@@ -25,10 +25,10 @@ export function HeaderActions({ vm }: Props) {
         disabled={vm.models.loading}
         onClick={() => void vm.loadModelsForProvider(vm.provider)}
       >
-        {vm.provider} models
+        {vm.provider} 모델 동기화
       </button>
       <button type="button" className={styles.button} disabled={vm.services.loading} onClick={() => void vm.fetchAiServices()}>
-        ai-services
+        서비스 동기화
       </button>
     </div>
   );

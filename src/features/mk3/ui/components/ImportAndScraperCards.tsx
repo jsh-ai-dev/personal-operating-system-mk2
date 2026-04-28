@@ -1,6 +1,7 @@
 "use client";
 
 import type { Mk3DashboardVM } from "@/features/mk3/application/useMk3Dashboard";
+import { ResultPanel } from "@/features/mk3/ui/components/ResultPanel";
 import styles from "@/features/mk3/ui/Mk3Dashboard.module.css";
 
 type Props = { vm: Mk3DashboardVM };
@@ -9,7 +10,9 @@ export function ImportAndScraperCards({ vm }: Props) {
   return (
     <>
       <article className={styles.card}>
-        <h2 className={styles.cardTitle}>7) Import</h2>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>대화 데이터 가져오기</h2>
+        </div>
         <p className={styles.hint}>로컬 데이터 소스에서 대화를 가져옵니다. 경로는 mk3 backend `.env` 설정을 사용합니다.</p>
         <div className={styles.chatControls}>
           <select
@@ -31,15 +34,16 @@ export function ImportAndScraperCards({ vm }: Props) {
             <option value="gemini-takeout">gemini-takeout</option>
           </select>
           <button type="button" className={styles.button} disabled={vm.importResult.loading} onClick={() => void vm.runImport()}>
-            import 실행
+            가져오기 실행
           </button>
         </div>
-        {vm.importResult.error ? <p className={styles.statusBad}>{vm.importResult.error}</p> : null}
-        {vm.importResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.importResult.body, null, 2)}</pre> : null}
+        <ResultPanel title="가져오기 응답 보기" body={vm.importResult.body} error={vm.importResult.error} />
       </article>
 
       <article className={styles.card}>
-        <h2 className={styles.cardTitle}>8) Scraper</h2>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>구독 정보 수집</h2>
+        </div>
         <p className={styles.hint}>크롬 로그인 상태를 기반으로 구독/사용량 정보를 스크래핑합니다.</p>
         <div className={styles.chatControls}>
           <select
@@ -58,11 +62,10 @@ export function ImportAndScraperCards({ vm }: Props) {
             <option value="cursor">cursor</option>
           </select>
           <button type="button" className={styles.button} disabled={vm.scraperResult.loading} onClick={() => void vm.runScraper()}>
-            scraper 실행
+            수집 실행
           </button>
         </div>
-        {vm.scraperResult.error ? <p className={styles.statusBad}>{vm.scraperResult.error}</p> : null}
-        {vm.scraperResult.body !== null ? <pre className={styles.jsonBox}>{JSON.stringify(vm.scraperResult.body, null, 2)}</pre> : null}
+        <ResultPanel title="수집 응답 보기" body={vm.scraperResult.body} error={vm.scraperResult.error} />
       </article>
     </>
   );
