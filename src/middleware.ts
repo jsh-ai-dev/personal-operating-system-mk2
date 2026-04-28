@@ -56,7 +56,9 @@ export async function middleware(request: NextRequest) {
     pathname === "/calendar" ||
     pathname.startsWith("/calendar/") ||
     pathname === "/notes" ||
-    pathname.startsWith("/notes/")
+    pathname.startsWith("/notes/") ||
+    pathname === "/mk3" ||
+    pathname.startsWith("/mk3/")
   ) {
     if (!hasSession) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -91,5 +93,7 @@ export const config = {
     "/calendar/:path*",
     "/notes",
     "/notes/:path*",
+    "/mk3",
+    "/mk3/:path*",
   ],
 };

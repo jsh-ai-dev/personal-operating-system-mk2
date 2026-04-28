@@ -9,6 +9,7 @@ import styles from "@/components/app-shell/AppShell.module.css";
 const NAV_ITEMS = [
   { href: "/calendar", label: "달력" },
   { href: "/notes", label: "노트" },
+  { href: "/mk3", label: "mk3" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -48,7 +49,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => {
             const active =
-              item.href === "/notes" ? pathname.startsWith("/notes") : pathname === item.href;
+              item.href === "/notes"
+                ? pathname.startsWith("/notes")
+                : item.href === "/mk3"
+                  ? pathname.startsWith("/mk3")
+                  : pathname === item.href;
             return (
               <Link
                 key={item.href}
