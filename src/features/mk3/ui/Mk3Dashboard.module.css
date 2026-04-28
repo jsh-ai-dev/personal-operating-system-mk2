@@ -31,6 +31,18 @@
   flex-wrap: wrap;
 }
 
+.inlineLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  color: #374151;
+}
+
 .button {
   border: 1px solid #d1d5db;
   background: #fff;
@@ -134,4 +146,31 @@
 .conversationItemActive {
   border-color: #3b82f6;
   background: #eff6ff;
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 10px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.messageItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.messageItemActive {
+  border-color: #0ea5e9;
+  background: #ecfeff;
 }
