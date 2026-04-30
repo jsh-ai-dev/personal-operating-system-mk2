@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getAllModels,
   getConversation,
-  generateQuiz,
   getMessages,
   deleteMessage,
   setMessageHidden,
@@ -22,6 +21,13 @@ import {
 import styles from "@/features/mk3/ui/Mk3ChatRoom.module.css";
 
 type Props = { initialId: string };
+const IMPORT_MODELS = new Set(["codex", "claude-code", "claude", "gemini"]);
+const IMPORT_LABELS: Record<string, string> = {
+  codex: "JetBrains · Codex",
+  "claude-code": "Claude Code",
+  claude: "Claude.ai",
+  gemini: "Gemini",
+};
 
 export function Mk3ChatRoom({ initialId }: Props) {
   const router = useRouter();
@@ -33,10 +39,9 @@ export function Mk3ChatRoom({ initialId }: Props) {
   const [selectedModel, setSelectedModel] = useState("");
   const [summaryModel, setSummaryModel] = useState("gpt-5-mini");
   const [summary, setSummary] = useState<string | null>(null);
+  const [summaryCostUsd, setSummaryCostUsd] = useState<number | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summarizing, setSummarizing] = useState(false);
-  const [quizLoading, setQuizLoading] = useState(false);
-  const [quizResult, setQuizResult] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
@@ -64,6 +69,7 @@ export function Mk3ChatRoom({ initialId }: Props) {
       setSelectedModel(allModels.find((m) => m.id === prior)?.id ?? allModels[0]?.id ?? "");
       setMessages(existingMessages);
       setSummary(conv?.summary ?? null);
+      setSummaryCostUsd(conv?.summary_cost_usd ?? null);
       if (conv?.summary) setSummaryOpen(false);
     }
     void boot();
@@ -77,10 +83,14 @@ export function Mk3ChatRoom({ initialId }: Props) {
   const summaryModels = useMemo(() => models.filter((m) => m.provider === "openai"), [models]);
   const readOnly = useMemo(() => {
     if (isNew) return false;
-    const hasAssistant = messages.some((m) => m.role === "assistant");
+    if (conversation && IMPORT_MODELS.has(conversation.model)) return true;
     const assistantModel = messages.find((m) => m.role === "assistant")?.model ?? "";
-    return hasAssistant && assistantModel === "";
-  }, [isNew, messages]);
+    return assistantModel === "";
+  }, [isNew, conversation, messages]);
+  const readOnlyLabel = useMemo(
+    () => IMPORT_LABELS[conversation?.model ?? ""] ?? "가져온 대화",
+    [conversation?.model],
+  );
 
   async function refreshMessages(targetId: string) {
     const data = await getMessages(targetId).catch(() => []);
@@ -128,32 +138,12 @@ export function Mk3ChatRoom({ initialId }: Props) {
     try {
       const result = await summarizeConversation(conversationId, summaryModel);
       setSummary(result.summary);
+      setSummaryCostUsd(result.cost_usd);
       setSummaryOpen(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "요약 실패");
     } finally {
       setSummarizing(false);
-    }
-  }
-
-  async function doQuiz() {
-    if (!conversationId || quizLoading) return;
-    setQuizLoading(true);
-    setError("");
-    try {
-      const result = await generateQuiz(conversationId, summaryModel);
-      if (!result.quiz.length) {
-        setQuizResult("퀴즈가 생성되지 않았습니다.");
-      } else {
-        const text = result.quiz
-          .map((q, i) => `${i + 1}. ${q.question}\n- ${q.options.join("\n- ")}\n정답: ${q.answer + 1}\n해설: ${q.explanation}`)
-          .join("\n\n");
-        setQuizResult(text);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "퀴즈 생성 실패");
-    } finally {
-      setQuizLoading(false);
     }
   }
 
@@ -233,14 +223,16 @@ export function Mk3ChatRoom({ initialId }: Props) {
     <main className={styles.page}>
       <header className={styles.header}>
         <Link href="/mk3/chat" className={styles.back}>← 목록으로</Link>
-        <select className={styles.model} value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={streaming || !!conversationId || readOnly}>
-          {models.map((m) => (
-            <option key={m.id} value={m.id}>
-              [{m.provider}] {m.id}
-            </option>
-          ))}
-        </select>
-        {readOnly ? <span className={styles.readonly}>가져온 대화 (읽기 전용)</span> : null}
+        {!readOnly ? (
+          <select className={styles.model} value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={streaming || !!conversationId}>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                [{m.provider}] {m.id}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        {readOnly ? <span className={styles.readonly}>{readOnlyLabel}</span> : null}
       </header>
       {!isNew ? (
         <div className={styles.summaryBar}>
@@ -252,13 +244,7 @@ export function Mk3ChatRoom({ initialId }: Props) {
           <button type="button" className={styles.summaryBtn} onClick={() => void doSummarize()} disabled={summarizing}>
             {summarizing ? "요약 중…" : summary ? "재요약" : "요약하기"}
           </button>
-          <button type="button" className={styles.summaryBtn} onClick={() => void doQuiz()} disabled={quizLoading}>
-            {quizLoading ? "퀴즈 생성 중…" : "퀴즈"}
-          </button>
-          <Link href="/mk3/summaries" className={styles.summaryLink}>
-            AI Summary
-          </Link>
-          {conversation?.summary_cost_usd != null ? <span className={styles.summaryCost}>${conversation.summary_cost_usd.toFixed(4)}</span> : null}
+          {summaryCostUsd != null ? <span className={styles.summaryCost}>${summaryCostUsd.toFixed(4)}</span> : null}
         </div>
       ) : null}
       {summary ? (
@@ -269,8 +255,6 @@ export function Mk3ChatRoom({ initialId }: Props) {
           {summaryOpen ? <div className={styles.summaryBody} dangerouslySetInnerHTML={{ __html: renderSummary(summary) }} /> : null}
         </div>
       ) : null}
-      {quizResult ? <div className={styles.quizPanel}>{quizResult}</div> : null}
-
       <div ref={boxRef} className={styles.messages}>
         {messages.map((msg) => (
           <div key={msg.id} className={`${styles.msg} ${msg.role === "user" ? styles.user : styles.assistant}`}>

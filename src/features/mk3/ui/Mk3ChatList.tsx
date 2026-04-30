@@ -38,14 +38,15 @@ type ServiceFilterKey =
   | "cursor";
 
 const SERVICE_FILTERS: Array<{ key: ServiceFilterKey; label: string; emoji: string }> = [
-  { key: "openai", label: "OpenAI", emoji: "🧠" },
-  { key: "anthropic", label: "Claude API", emoji: "🧡" },
-  { key: "google", label: "Gemini API", emoji: "🔷" },
-  { key: "jetbrains-codex", label: "Codex", emoji: "🛠️" },
-  { key: "claude-export", label: "Claude", emoji: "🟠" },
-  { key: "claude-code", label: "Claude Code", emoji: "💻" },
   { key: "chatgpt", label: "ChatGPT", emoji: "💬" },
+  { key: "openai", label: "ChatGPT API", emoji: "🧠" },
+  { key: "jetbrains-codex", label: "Codex", emoji: "🛠️" },
+  { key: "gemini-takeout", label: "Gemini", emoji: "💎" },
+  { key: "google", label: "Gemini API", emoji: "🔷" },
   { key: "gemini-code-assist", label: "Gemini Code Assist", emoji: "🧩" },
+  { key: "claude-export", label: "Claude", emoji: "🟠" },
+  { key: "anthropic", label: "Claude API", emoji: "🧡" },
+  { key: "claude-code", label: "Claude Code", emoji: "💻" },
   { key: "copilot", label: "Copilot", emoji: "🛫" },
   { key: "cursor", label: "Cursor", emoji: "⌨️" },
 ];
@@ -152,7 +153,7 @@ export function Mk3ChatList() {
     };
     if (byModel[conv.model]) return byModel[conv.model];
     const byProvider: Record<string, string> = {
-      openai: "OpenAI",
+      openai: "ChatGPT API",
       anthropic: "Claude",
       google: "Gemini",
     };
