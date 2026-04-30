@@ -94,6 +94,14 @@ export async function setConversationHidden(id: string, hidden: boolean): Promis
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
+export async function deleteConversation(id: string): Promise<void> {
+  const res = await fetch(`/api/mk3/v1/chat/conversations/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 export async function setMessageHidden(id: string, hidden: boolean): Promise<void> {
   const res = await fetch(`/api/mk3/v1/chat/messages/${id}`, {
     method: "PATCH",
@@ -110,6 +118,14 @@ export async function updateMessageContent(id: string, content: string): Promise
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function deleteMessage(id: string): Promise<void> {
+  const res = await fetch(`/api/mk3/v1/chat/messages/${id}`, {
+    method: "DELETE",
+    credentials: "include",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }

@@ -9,6 +9,7 @@ import {
   getConversation,
   generateQuiz,
   getMessages,
+  deleteMessage,
   setMessageHidden,
   streamChat,
   summarizeConversation,
@@ -44,6 +45,11 @@ export function Mk3ChatRoom({ initialId }: Props) {
   const [editContent, setEditContent] = useState("");
   const boxRef = useRef<HTMLDivElement | null>(null);
   const streamingRef = useRef("");
+
+  function fitEditHeight(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   useEffect(() => {
     async function boot() {
@@ -85,6 +91,13 @@ export function Mk3ChatRoom({ initialId }: Props) {
     if (msg.id.startsWith("temp-")) return;
     await setMessageHidden(msg.id, !msg.is_hidden);
     if (conversationId) await refreshMessages(conversationId);
+  }
+
+  async function removeMessage(msg: Message) {
+    if (msg.id.startsWith("temp-")) return;
+    if (!window.confirm("이 말풍선을 삭제할까요?")) return;
+    await deleteMessage(msg.id);
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
   }
 
   function startEdit(msg: Message) {
@@ -268,7 +281,17 @@ export function Mk3ChatRoom({ initialId }: Props) {
                 </button>
               ) : editingId === msg.id ? (
                 <div className={styles.editWrap}>
-                  <textarea className={styles.editInput} value={editContent} onChange={(e) => setEditContent(e.target.value)} />
+                  <textarea
+                    className={styles.editInput}
+                    value={editContent}
+                    onChange={(e) => {
+                      setEditContent(e.target.value);
+                      fitEditHeight(e.currentTarget);
+                    }}
+                    ref={(el) => {
+                      if (el) fitEditHeight(el);
+                    }}
+                  />
                   <div className={styles.editActions}>
                     <button type="button" className={styles.smallBtnPrimary} onClick={() => void saveEdit(msg)}>저장</button>
                     <button type="button" className={styles.smallBtn} onClick={cancelEdit}>취소</button>
@@ -279,8 +302,9 @@ export function Mk3ChatRoom({ initialId }: Props) {
                   <div className={styles.bubble}>{msg.content}</div>
                   {!msg.id.startsWith("temp-") ? (
                     <div className={styles.msgActions}>
-                      <button type="button" className={styles.msgBtn} onClick={() => startEdit(msg)}>✎</button>
-                      <button type="button" className={styles.msgBtn} onClick={() => void toggleHidden(msg)}>✕</button>
+                      <button type="button" className={styles.msgBtn} onClick={() => startEdit(msg)}>수정</button>
+                      <button type="button" className={styles.msgBtn} onClick={() => void toggleHidden(msg)}>{msg.is_hidden ? "복원" : "숨김"}</button>
+                      <button type="button" className={`${styles.msgBtn} ${styles.msgBtnDelete}`} onClick={() => void removeMessage(msg)}>삭제</button>
                     </div>
                   ) : null}
                 </div>
