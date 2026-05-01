@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { type Conversation, listConversations } from "@/features/mk3/application/chatApi";
+import { generateQuiz, type Conversation, listConversations } from "@/features/mk3/application/chatApi";
 import styles from "@/features/mk3/ui/Mk3Summaries.module.css";
 
 type ServiceFilterKey =
@@ -31,6 +32,11 @@ const SERVICE_FILTERS: Array<{ key: ServiceFilterKey; label: string; emoji: stri
   { key: "claude-code", label: "Claude Code", emoji: "💻" },
   { key: "copilot", label: "Copilot", emoji: "🛫" },
   { key: "cursor", label: "Cursor", emoji: "⌨️" },
+];
+const OPENAI_MODELS = [
+  { id: "gpt-5-nano", label: "GPT-5 Nano" },
+  { id: "gpt-5-mini", label: "GPT-5 Mini" },
+  { id: "gpt-5", label: "GPT-5" },
 ];
 
 function sourceLabel(conv: Conversation) {
@@ -79,12 +85,18 @@ function formatCost(cost: number | null): string {
 }
 
 export function Mk3Summaries() {
+  const searchParams = useSearchParams();
+  const openSummaryId = searchParams.get("open");
   const [all, setAll] = useState<Conversation[]>([]);
   const [activeFilters, setActiveFilters] = useState<ServiceFilterKey[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<"7d" | "30d" | "month" | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [quizModelById, setQuizModelById] = useState<Record<string, string>>({});
+  const [quizCostById, setQuizCostById] = useState<Record<string, number | null>>({});
+  const [quizGenerating, setQuizGenerating] = useState<Set<string>>(new Set());
+  const [quizErrorById, setQuizErrorById] = useState<Record<string, string>>({});
 
   function dateOnly(d: Date) {
     const y = d.getFullYear();
@@ -136,6 +148,28 @@ export function Mk3Summaries() {
     });
   }, [summarized, activeFilters, dateFrom, dateTo]);
 
+  useEffect(() => {
+    if (!openSummaryId) return;
+    if (!filtered.some((conv) => conv.id === openSummaryId)) return;
+    setExpanded((prev) => {
+      if (prev.has(openSummaryId)) return prev;
+      const next = new Set(prev);
+      next.add(openSummaryId);
+      return next;
+    });
+  }, [openSummaryId, filtered]);
+
+  useEffect(() => {
+    if (!openSummaryId) return;
+    if (!filtered.some((conv) => conv.id === openSummaryId)) return;
+    const target = document.getElementById(`summary-${openSummaryId}`);
+    if (!target) return;
+    window.requestAnimationFrame(() => {
+      const top = target.getBoundingClientRect().top + window.scrollY - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
+  }, [openSummaryId, filtered]);
+
   function toggleExpand(id: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -147,6 +181,29 @@ export function Mk3Summaries() {
 
   function toggleFilter(key: ServiceFilterKey) {
     setActiveFilters((prev) => (prev.includes(key) ? prev.filter((v) => v !== key) : [...prev, key]));
+  }
+
+  function selectedQuizModel(conv: Conversation): string {
+    return quizModelById[conv.id] ?? conv.quiz_model ?? "gpt-5-mini";
+  }
+
+  async function createQuiz(conv: Conversation) {
+    const model = selectedQuizModel(conv);
+    setQuizGenerating((prev) => new Set(prev).add(conv.id));
+    setQuizErrorById((prev) => ({ ...prev, [conv.id]: "" }));
+    try {
+      const result = await generateQuiz(conv.id, model);
+      setQuizCostById((prev) => ({ ...prev, [conv.id]: result.cost_usd }));
+      setAll((prev) => prev.map((c) => (c.id === conv.id ? { ...c, quiz_model: model, quiz_cost_usd: result.cost_usd, quiz: result.quiz } : c)));
+    } catch (e) {
+      setQuizErrorById((prev) => ({ ...prev, [conv.id]: e instanceof Error ? e.message : "퀴즈 생성 실패" }));
+    } finally {
+      setQuizGenerating((prev) => {
+        const next = new Set(prev);
+        next.delete(conv.id);
+        return next;
+      });
+    }
   }
 
   return (
@@ -209,7 +266,7 @@ export function Mk3Summaries() {
       {filtered.length > 0 ? (
         <section className={styles.list}>
           {filtered.map((conv) => (
-            <article key={conv.id} className={styles.card}>
+            <article key={conv.id} id={`summary-${conv.id}`} className={styles.card}>
               <div className={styles.cardHeader}>
                 <div className={styles.meta}>
                   <span className={`${styles.badge} ${styles[`badge_${conv.provider}`] ?? ""}`}>
@@ -235,6 +292,29 @@ export function Mk3Summaries() {
               </div>
               {expanded.has(conv.id) ? (
                 <div className={styles.body}>
+                  <div className={styles.quizBar}>
+                    <select
+                      className={styles.quizSelect}
+                      value={selectedQuizModel(conv)}
+                      onChange={(e) => setQuizModelById((prev) => ({ ...prev, [conv.id]: e.target.value }))}
+                      disabled={quizGenerating.has(conv.id)}
+                    >
+                      {OPENAI_MODELS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className={styles.quizBtn} onClick={() => void createQuiz(conv)} disabled={quizGenerating.has(conv.id)}>
+                      {quizGenerating.has(conv.id) ? "퀴즈 생성 중..." : (conv.quiz?.length ? "재생성" : "퀴즈 만들기")}
+                    </button>
+                    {(quizCostById[conv.id] ?? conv.quiz_cost_usd) != null ? (
+                      <span className={styles.quizCost}>
+                        {formatCost(quizCostById[conv.id] ?? conv.quiz_cost_usd ?? null)}
+                      </span>
+                    ) : null}
+                  </div>
+                  {quizErrorById[conv.id] ? <p className={styles.quizError}>{quizErrorById[conv.id]}</p> : null}
                   <div
                     className={`${styles.summaryContent} ${styles.summaryExpanded}`}
                     dangerouslySetInnerHTML={{ __html: renderSummary(conv.summary ?? "") }}
