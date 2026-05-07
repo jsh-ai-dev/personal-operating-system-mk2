@@ -18,11 +18,11 @@ patches:
 
 images:
   - name: personal-operating-system-mk2-web
-    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-web
+    newName: 948360715051.dkr.ecr.ap-northeast-2.amazonaws.com/personal-operating-system-mk2-web
     newTag: latest
   - name: personal-operating-system-mk2-api
-    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-api
+    newName: 948360715051.dkr.ecr.ap-northeast-2.amazonaws.com/personal-operating-system-mk2-api
     newTag: latest
   - name: personal-operating-system-mk2-auth
-    newName: REPLACE_WITH_ECR_URI/personal-operating-system-mk2-auth
+    newName: 948360715051.dkr.ecr.ap-northeast-2.amazonaws.com/personal-operating-system-mk2-auth
     newTag: latest
