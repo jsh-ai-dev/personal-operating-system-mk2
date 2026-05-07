@@ -112,6 +112,14 @@ kubectl -n <namespace> get deploy,svc,ingress,pods
 4. mk3에서 MongoDB 쓰기 + Qdrant upsert/search 성공
 5. Ingress 경유로 API/Web 라우팅 정상
 
+## 7-1) 배포 전 placeholder 검사 (필수)
+
+배포 전에 `REPLACE_...`, `<set-local-value>`, `CHANGE_ME` 같은 값이 남아있지 않은지 검사한다.
+
+```powershell
+pwsh ./scripts/aws/check-overlay-placeholders.ps1 -WorkspaceRoot "D:/dev"
+```
+
 ## 8) 비용 제어 (학습 환경 필수)
 
 1. EventBridge + Lambda로 야간 자동 stop/start
