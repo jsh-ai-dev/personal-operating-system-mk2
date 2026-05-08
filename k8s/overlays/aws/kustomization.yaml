@@ -13,6 +13,7 @@ resources:
   - secret.aws.yaml
   - issuer.letsencrypt.yaml
   - certificate.mk2.yaml
+  - middleware.https-redirect.yaml
 
 patches:
   - path: configmap.aws.patch.yaml

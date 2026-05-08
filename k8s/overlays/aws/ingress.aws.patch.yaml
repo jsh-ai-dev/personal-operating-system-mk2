@@ -2,6 +2,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: mk2-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: pos-mk2-mk2-https-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
