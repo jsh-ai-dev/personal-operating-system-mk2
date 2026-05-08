@@ -6,3 +6,12 @@ spec:
   ingressClassName: traefik
   rules:
     - host: www.jsh-ai-dev.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mk2-web
+                port:
+                  number: 3000
