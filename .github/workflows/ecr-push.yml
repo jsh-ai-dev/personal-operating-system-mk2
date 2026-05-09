@@ -5,21 +5,6 @@
 name: Build and push mk2 images to ECR
 
 on:
-  push:
-    branches: [main, master]
-    paths:
-      - ".github/workflows/ecr-push.yml"
-      - "Dockerfile.web"
-      - "Dockerfile.api"
-      - "Dockerfile.auth"
-      - "backend/**"
-      - "auth-service/**"
-      - "src/**"
-      - "public/**"
-      - "package*.json"
-      - "next.config.*"
-      - "eslint.config.mjs"
-      - "tsconfig.json"
   workflow_dispatch:
 
 permissions:
@@ -66,3 +51,16 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ matrix.image }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ matrix.image }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: [self-hosted, linux, pos-deploy]
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Restart mk2 deployments on k3s
+        run: |
+          set -euo pipefail
+          sudo kubectl -n pos-mk2 rollout restart deploy/mk2-web deploy/mk2-api deploy/mk2-auth
+          sudo kubectl -n pos-mk2 rollout status deploy/mk2-web --timeout=300s
+          sudo kubectl -n pos-mk2 rollout status deploy/mk2-api --timeout=300s
+          sudo kubectl -n pos-mk2 rollout status deploy/mk2-auth --timeout=300s
