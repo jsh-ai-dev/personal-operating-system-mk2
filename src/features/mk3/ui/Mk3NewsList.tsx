@@ -92,7 +92,6 @@ export function Mk3NewsList() {
 
   useEffect(() => {
     void loadFilterOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

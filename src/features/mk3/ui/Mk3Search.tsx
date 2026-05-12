@@ -166,7 +166,7 @@ export function Mk3Search() {
           ) : (
             <div className={styles.empty}>
               <p>관련 대화를 찾지 못했습니다.</p>
-              <p className={styles.emptyHint}>아직 인덱싱이 안 됐다면 위의 "전체 대화 인덱싱"을 먼저 실행해보세요.</p>
+              <p className={styles.emptyHint}>아직 인덱싱이 안 됐다면 위의 &quot;전체 대화 인덱싱&quot;을 먼저 실행해보세요.</p>
             </div>
           )}
         </section>
