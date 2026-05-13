@@ -15,6 +15,7 @@ type AIService = {
   currency?: string;
   monthly_cost?: number | null;
   next_billing_date?: string | null;
+  subscribed_at?: string | null;
   plan_name?: string | null;
   billing_day?: number | null;
   usage_limit?: number | null;
@@ -113,7 +114,8 @@ export function Mk3OverviewDashboard() {
 
       if (hasCodex) await runSync("codex");
       if (hasClaude) await runSync("claude");
-      if (isBillingPast("ChatGPT")) await runSync("chatgpt");
+      // ChatGPT는 Codex 갱신 시 subscribed_at이 동기화되므로 별도 갱신 불필요
+      // if (isBillingPast("ChatGPT")) await runSync("chatgpt");
 
       await loadServices();
       await fetch("/api/mk3/v1/scraper/meta", { method: "PATCH", credentials: "include" })
@@ -242,31 +244,33 @@ export function Mk3OverviewDashboard() {
     return new Date(ts).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   }
 
-  // billing_day 기준으로 다음 결제일 계산 (mk3 AiServiceCard와 동일 로직)
-  // billing_day가 없으면 next_billing_date를 파싱해서 포맷, 둘 다 없으면 null
-  function formatNextBillingDate(service: AIService): string | null {
-    if (service.billing_day) {
-      const today = new Date();
-      let date = new Date(today.getFullYear(), today.getMonth(), service.billing_day);
-      if (date <= today) {
-        date = new Date(today.getFullYear(), today.getMonth() + 1, service.billing_day);
-      }
-      return date.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-    }
-    if (service.next_billing_date) {
-      const parsed = new Date(service.next_billing_date);
-      if (!isNaN(parsed.getTime())) {
-        return parsed.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-      }
-    }
-    return null;
+  function formatSubscribedAt(service: AIService): string | null {
+    if (!service.subscribed_at) return null;
+    const d = new Date(service.subscribed_at);
+    return isNaN(d.getTime()) ? null : d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  }
+
+  // usage_current가 1이면 스크래퍼 호출 자체로 인한 noise로 간주 → 0으로 표시
+  function isEffectivelyZero(service: AIService): boolean {
+    return service.usage_current === 1;
   }
 
   function usagePercent(service: AIService): number | null {
     if (typeof service.usage_limit !== "number") return null;
     if (typeof service.usage_current !== "number") return null;
     if (service.usage_limit <= 0) return null;
+    if (isEffectivelyZero(service)) return 0;
     return Math.min(Math.round((service.usage_current / service.usage_limit) * 1000) / 10, 100);
+  }
+
+  function displayCurrent(service: AIService): number | null {
+    return isEffectivelyZero(service) ? 0 : (service.usage_current ?? null);
+  }
+
+  // 0으로 간주할 때는 리셋 시간 제거 — 매 스크래핑마다 바뀌는 의미없는 시간이기 때문
+  function displayUnit(service: AIService): string | null {
+    if (!service.usage_unit) return null;
+    return isEffectivelyZero(service) ? "%" : service.usage_unit;
   }
 
   function usageColor(percent: number | null) {
@@ -292,19 +296,8 @@ export function Mk3OverviewDashboard() {
       </header>
 
       <section className={styles.summary}>
-        {totalUSD > 0 ? (
-          <div className={styles.summaryItem}>
-            <span>USD 합계</span>
-            <strong>{moneyText("USD", totalUSD)}</strong>
-          </div>
-        ) : null}
-        {totalKRW > 0 ? (
-          <div className={styles.summaryItem}>
-            <span>KRW 합계</span>
-            <strong>{moneyText("KRW", totalKRW)}</strong>
-          </div>
-        ) : null}
-        <span className={styles.count}>{services.length}개 서비스</span>
+        {totalUSD > 0 ? <span>총 <strong>{moneyText("USD", totalUSD)}</strong></span> : null}
+        {totalKRW > 0 ? <span>총 <strong>{moneyText("KRW", totalKRW)}</strong></span> : null}
       </section>
 
       {(isRefreshingAll || hasRefreshedThisSession) && (
@@ -355,16 +348,30 @@ export function Mk3OverviewDashboard() {
                 setDropTargetId(null);
               }}
             >
-              <h3 className={styles.cardTitle}>{service.name ?? "(unnamed)"}</h3>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>{service.name ?? "(unnamed)"}</h3>
+                <div className={styles.cardActions}>
+                  <Link href={`/mk3/dashboard/ai-services/${service.id}/edit`} className={styles.cardBtn}>
+                    수정
+                  </Link>
+                  <button
+                    type="button"
+                    className={`${styles.cardBtn} ${styles.cardBtnDanger}`}
+                    onClick={() => void deleteService(service)}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
               <p className={styles.cardLine}>플랜: {service.plan_name ?? "-"}</p>
-              <p className={styles.cardLine}>통화: {typeof service.monthly_cost === "number" ? (service.currency ?? "-") : "-"}</p>
+
               <p className={styles.cardLine}>
-                월요금:{" "}
+                구독료:{" "}
                 {typeof service.monthly_cost === "number" && service.currency
                   ? moneyText(service.currency, service.monthly_cost)
                   : "-"}
               </p>
-              <p className={styles.cardLine}>다음 결제일: {formatNextBillingDate(service) ?? "-"}</p>
+              <p className={styles.cardLine}>구독일: {formatSubscribedAt(service) ?? "-"}</p>
               {typeof service.usage_limit === "number" ? (
                 <div className={styles.usageBox}>
                   <div className={styles.usageHead}>
@@ -383,24 +390,12 @@ export function Mk3OverviewDashboard() {
                     />
                   </div>
                   <div className={styles.usageText}>
-                    {typeof service.usage_current === "number" ? service.usage_current.toLocaleString() : "-"} /{" "}
+                    {displayCurrent(service)?.toLocaleString() ?? "-"} /{" "}
                     {service.usage_limit.toLocaleString()}
-                    {service.usage_unit ? ` ${service.usage_unit}` : ""}
+                    {displayUnit(service) ? ` ${displayUnit(service)}` : ""}
                   </div>
                 </div>
               ) : null}
-              <div className={styles.cardActions}>
-                <Link href={`/mk3/dashboard/ai-services/${service.id}/edit`} className={styles.cardBtn}>
-                  수정
-                </Link>
-                <button
-                  type="button"
-                  className={`${styles.cardBtn} ${styles.cardBtnDanger}`}
-                  onClick={() => void deleteService(service)}
-                >
-                  삭제
-                </button>
-              </div>
             </article>
           ))}
         </section>

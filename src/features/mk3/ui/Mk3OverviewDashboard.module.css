@@ -152,8 +152,15 @@
   background: #6366f1;
 }
 
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
 .cardTitle {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 16px;
 }
 
@@ -164,9 +171,9 @@
 }
 
 .cardActions {
-  margin-top: 10px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .usageBox {

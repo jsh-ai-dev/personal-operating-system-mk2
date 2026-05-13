@@ -26,10 +26,10 @@ type AIServiceFormApi = {
 const SERVICE_NAMES = [
   "ChatGPT",
   "Codex",
-  "Gemini",
-  "Gemini Code Assist",
   "Claude",
   "Claude Code",
+  "Gemini",
+  "Gemini Code Assist",
   "Copilot",
   "Cursor",
   "직접 입력",
@@ -225,7 +225,7 @@ export function Mk3AiServiceForm({ serviceId }: Props) {
               className={styles.input}
               value={form.plan_name}
               onChange={(e) => setForm((prev) => ({ ...prev, plan_name: e.target.value }))}
-              placeholder="예: Plus, Pro, Max"
+              placeholder="예: Plus, Pro, Basic"
             />
           </div>
 
@@ -255,7 +255,7 @@ export function Mk3AiServiceForm({ serviceId }: Props) {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>결제일 (매월 몇 일)</label>
+            <label className={styles.label}>구독일</label>
             <input
               className={styles.input}
               value={form.billing_day}
@@ -265,8 +265,6 @@ export function Mk3AiServiceForm({ serviceId }: Props) {
               max="31"
             />
           </div>
-
-          <div className={styles.section}>사용량 (선택)</div>
 
           <div className={styles.row}>
             <div className={styles.field}>
@@ -298,23 +296,23 @@ export function Mk3AiServiceForm({ serviceId }: Props) {
               className={styles.input}
               value={form.usage_unit}
               onChange={(e) => setForm((prev) => ({ ...prev, usage_unit: e.target.value }))}
-              placeholder="예: messages / 3h"
+              placeholder=""
             />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>청구 페이지 URL (선택)</label>
+            <label className={styles.label}>청구 페이지 URL</label>
             <input
               className={styles.input}
               value={form.billing_url}
               onChange={(e) => setForm((prev) => ({ ...prev, billing_url: e.target.value }))}
               type="url"
-              placeholder="https://..."
+              placeholder=""
             />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>메모 (선택)</label>
+            <label className={styles.label}>비고</label>
             <textarea
               className={styles.textarea}
               value={form.notes}
