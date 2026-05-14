@@ -109,6 +109,7 @@
 .badge_openai { background: #d1fae5; color: #065f46; }
 .badge_anthropic { background: #fde68a; color: #78350f; }
 .badge_google { background: #dbeafe; color: #1e3a8a; }
+.badge_jetbrains { background: #d1fae5; color: #065f46; }
 .modelTag {
   padding: 2px 7px;
   border-radius: 4px;

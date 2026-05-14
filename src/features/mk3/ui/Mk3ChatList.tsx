@@ -147,17 +147,17 @@ export function Mk3ChatList() {
 
   function sourceLabel(conv: Conversation) {
     const byModel: Record<string, string> = {
-      codex: "JetBrains",
+      codex: "Codex",
       "claude-code": "Claude Code",
-      claude: "Claude.ai",
+      claude: "Claude",
       gemini: "Gemini",
       chatgpt: "ChatGPT",
     };
     if (byModel[conv.model]) return byModel[conv.model];
     const byProvider: Record<string, string> = {
       openai: "ChatGPT API",
-      anthropic: "Claude",
-      google: "Gemini",
+      anthropic: "Claude API",
+      google: "Gemini API",
     };
     return byProvider[conv.provider] ?? conv.provider;
   }
@@ -210,7 +210,7 @@ export function Mk3ChatList() {
         <h1 className={styles.title}>AI Chat</h1>
         <div className={styles.actions}>
           <button type="button" className={styles.btn} onClick={() => setShowHidden((v) => !v)}>
-            {showHidden ? "숨김 숨기기" : "숨김 보기"}
+            {showHidden ? "완료" : "숨김 관리"}
           </button>
           <button type="button" className={styles.btn} onClick={() => setImportModalOpen(true)} disabled={!!importing}>
             내역 가져오기
@@ -235,7 +235,6 @@ export function Mk3ChatList() {
                 </option>
               ))}
             </select>
-            <p className={styles.modalHint}>현재 구현된 항목만 선택 가능합니다.</p>
             <div className={styles.modalActions}>
               <button type="button" className={styles.btn} onClick={() => setImportModalOpen(false)} disabled={!!importing}>
                 취소
@@ -335,24 +334,27 @@ export function Mk3ChatList() {
             <Link href={`/mk3/chat/${conv.id}`} className={`${styles.item} ${conv.is_hidden ? styles.itemHidden : ""}`}>
               <div className={styles.meta}>
                 <span className={`${styles.badge} ${styles[`badge_${conv.provider}`] ?? ""}`}>{sourceLabel(conv)}</span>
-                <span className={`${styles.typeTag} ${convType(conv).cls}`}>{convType(conv).label}</span>
-                <span>{conv.model}</span>
-                <span className={styles.cost}>{formatCost(conv.total_cost_usd)}</span>
-                <span>{(conv.total_tokens_input + conv.total_tokens_output).toLocaleString()} tokens</span>
+                {convType(conv).label === "API" && <span>{conv.model}</span>}
+                {convType(conv).label === "API" && <span className={styles.cost}>{formatCost(conv.total_cost_usd)}</span>}
               </div>
               <div className={styles.titleLine}>{conv.title || "(untitled)"}</div>
               <div className={styles.sub}>
                 메시지 {conv.message_count}개 · 생성 {new Date(conv.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               </div>
             </Link>
-            <div className={styles.sideActions}>
-              <button type="button" className={styles.sideBtn} onClick={() => void toggleHidden(conv)} title="숨김 토글">
-                {conv.is_hidden ? "복원" : "숨김"}
-              </button>
-              <button type="button" className={`${styles.sideBtn} ${styles.sideDelete}`} onClick={() => void removeConversation(conv)} title="삭제">
-                삭제
-              </button>
-            </div>
+            {showHidden && <button type="button" className={`${styles.eyeBtn} ${conv.is_hidden ? styles.eyeBtnHidden : ""}`} onClick={() => void toggleHidden(conv)} title={conv.is_hidden ? "숨김 해제" : "숨기기"}>
+              {conv.is_hidden ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
+            </button>}
           </div>
         ))}
         {!loading && filteredConversations.length === 0 ? <p className={styles.sub}>조건에 맞는 대화 기록이 없습니다.</p> : null}

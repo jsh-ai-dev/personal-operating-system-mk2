@@ -7,7 +7,7 @@ import { listConversations, type Conversation } from "@/features/mk3/application
 import styles from "@/features/mk3/ui/Mk3QuizList.module.css";
 
 function providerLabel(p: string) {
-  return ({ openai: "OpenAI", anthropic: "Anthropic", google: "Google", gemini: "Gemini", jetbrains: "JetBrains" }[p] ?? p);
+  return ({ openai: "ChatGPT API", anthropic: "Claude API", google: "Gemini API", gemini: "Gemini", jetbrains: "Codex" }[p] ?? p);
 }
 
 function formatCost(v: number | null) {

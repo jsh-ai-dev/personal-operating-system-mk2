@@ -41,16 +41,16 @@ const OPENAI_MODELS = [
 
 function sourceLabel(conv: Conversation) {
   const byModel: Record<string, string> = {
-    codex: "JetBrains",
+    codex: "Codex",
     "claude-code": "Claude Code",
-    claude: "Claude.ai",
+    claude: "Claude",
     gemini: "Gemini",
   };
   if (byModel[conv.model]) return byModel[conv.model];
   const byProvider: Record<string, string> = {
     openai: "ChatGPT API",
-    anthropic: "Claude",
-    google: "Gemini",
+    anthropic: "Claude API",
+    google: "Gemini API",
   };
   return byProvider[conv.provider] ?? conv.provider;
 }

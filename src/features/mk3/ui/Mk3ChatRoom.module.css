@@ -28,10 +28,25 @@
   border-radius: 8px;
   padding: 6px 8px;
 }
+.model option:disabled { color: #c0c4cc; }
 .readonly {
   font-size: 12px;
   color: #94a3b8;
 }
+.deleteBtn {
+  flex-shrink: 0;
+  margin-left: auto;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+}
+.deleteBtn:hover { background: #fef2f2; }
+.deleteBtn:disabled { opacity: 0.4; cursor: default; }
 .summaryBar {
   display: flex;
   align-items: center;
@@ -113,7 +128,6 @@
 }
 .msgWrap {
   width: 100%;
-  max-width: 86%;
   display: flex;
   flex-direction: column;
 }
@@ -133,6 +147,7 @@
 }
 .bubble {
   max-width: 80%;
+  width: fit-content;
   padding: 10px 12px;
   border-radius: 10px;
   white-space: pre-wrap;
@@ -151,21 +166,24 @@
 .msgActions {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 2px;
+  align-items: center;
 }
 .msgBtn {
-  min-width: 42px;
-  height: 26px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
-  color: #64748b;
-  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  border-radius: 4px;
 }
-.msgBtnDelete {
-  border-color: #fecaca;
-  color: #ef4444;
-}
+.msgBtn:hover { color: #64748b; background: #f1f5f9; }
+.msgBtnDelete { color: #fca5a5; }
+.msgBtnDelete:hover { color: #ef4444; background: #fef2f2; }
 .editWrap {
   display: flex;
   flex-direction: column;
@@ -212,23 +230,22 @@
   margin-top: 4px;
 }
 .composer {
-  display: flex;
-  gap: 8px;
   border-top: 1px solid #e5e7eb;
   padding: 12px 0;
 }
 .input {
-  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 9px 10px;
-}
-.send {
-  border: 1px solid #6366f1;
-  background: #6366f1;
-  color: #fff;
-  border-radius: 8px;
-  padding: 0 14px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  font-family: inherit;
+  font-size: inherit;
+  max-height: 200px;
+  overflow-y: auto;
 }
 .error {
   font-size: 12px;

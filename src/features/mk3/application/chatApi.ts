@@ -34,6 +34,7 @@ export type Message = {
 export type AiModel = {
   id: string;
   provider: "openai" | "claude" | "gemini";
+  enabled?: boolean;
   input_per_1m?: number;
   output_per_1m?: number;
   rpm?: number;

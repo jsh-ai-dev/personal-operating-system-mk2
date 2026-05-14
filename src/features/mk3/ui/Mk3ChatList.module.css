@@ -39,15 +39,13 @@
   gap: 8px;
 }
 .row {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  position: relative;
 }
 .item {
-  flex: 1;
+  display: block;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 12px 44px 12px 14px;
   background: #fff;
   text-decoration: none;
   color: inherit;
@@ -68,6 +66,7 @@
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
+  line-height: 1;
   background: #f3f4f6;
   color: #374151;
 }
@@ -83,10 +82,15 @@
   background: #dbeafe;
   color: #1e3a8a;
 }
+.badge_jetbrains {
+  background: #d1fae5;
+  color: #065f46;
+}
 .typeTag {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
+  line-height: 1;
 }
 .typeApi {
   background: #f3f4f6;
@@ -113,26 +117,24 @@
   font-size: 12px;
   color: #94a3b8;
 }
-.sideActions {
+.eyeBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-self: center;
-}
-.sideBtn {
-  min-width: 46px;
-  height: 32px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #64748b;
-  font-size: 12px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
   cursor: pointer;
+  z-index: 1;
 }
-.sideDelete {
-  border-color: #fecaca;
-  color: #ef4444;
-}
+.eyeBtn:hover { color: #94a3b8; }
+.eyeBtnHidden { color: #6366f1; }
+.eyeBtnHidden:hover { color: #4f46e5; }
 .result {
   margin: 8px 0 12px;
   font-size: 12px;

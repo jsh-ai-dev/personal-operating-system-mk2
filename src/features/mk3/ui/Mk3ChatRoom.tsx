@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getAllModels,
+  deleteConversation,
   getConversation,
   getMessages,
   deleteMessage,
@@ -50,6 +51,8 @@ export function Mk3ChatRoom({ initialId }: Props) {
   const [editContent, setEditContent] = useState("");
   const boxRef = useRef<HTMLDivElement | null>(null);
   const streamingRef = useRef("");
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const prevMsgCountRef = useRef(0);
 
   function fitEditHeight(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -66,7 +69,7 @@ export function Mk3ChatRoom({ initialId }: Props) {
       setConversation(conv);
       setModels(allModels);
       const prior = existingMessages.find((m) => m.role === "assistant")?.model ?? "";
-      setSelectedModel(allModels.find((m) => m.id === prior)?.id ?? allModels[0]?.id ?? "");
+      setSelectedModel(allModels.find((m) => m.id === prior)?.id ?? allModels.find((m) => m.enabled !== false)?.id ?? "");
       setMessages(existingMessages);
       setSummary(conv?.summary ?? null);
       setSummaryCostUsd(conv?.summary_cost_usd ?? null);
@@ -76,8 +79,17 @@ export function Mk3ChatRoom({ initialId }: Props) {
   }, [conversationId]);
 
   useEffect(() => {
-    boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight });
-  }, [messages, streamingText]);
+    if (messages.length > prevMsgCountRef.current) {
+      boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight });
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages]);
+
+  useEffect(() => {
+    if (streamingText) {
+      boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight });
+    }
+  }, [streamingText]);
 
   const selected = useMemo(() => models.find((m) => m.id === selectedModel), [models, selectedModel]);
   const summaryModels = useMemo(() => models.filter((m) => m.provider === "openai"), [models]);
@@ -162,6 +174,7 @@ export function Mk3ChatRoom({ initialId }: Props) {
     if (!text || !selected || streaming || readOnly) return;
 
     setInput("");
+    if (inputRef.current) { inputRef.current.style.height = "auto"; }
     setStreaming(true);
     setStreamingText("");
     streamingRef.current = "";
@@ -219,6 +232,13 @@ export function Mk3ChatRoom({ initialId }: Props) {
     }
   }
 
+  async function handleDelete() {
+    if (!conversationId) return;
+    if (!window.confirm("이 대화 내역을 완전히 삭제할까요?")) return;
+    await deleteConversation(conversationId);
+    router.push("/mk3/chat");
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -226,13 +246,18 @@ export function Mk3ChatRoom({ initialId }: Props) {
         {!readOnly ? (
           <select className={styles.model} value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={streaming || !!conversationId}>
             {models.map((m) => (
-              <option key={m.id} value={m.id}>
+              <option key={m.id} value={m.id} disabled={m.enabled === false}>
                 [{m.provider}] {m.id}
               </option>
             ))}
           </select>
         ) : null}
         {readOnly ? <span className={styles.readonly}>{readOnlyLabel}</span> : null}
+        {!isNew && conversationId ? (
+          <button type="button" className={styles.deleteBtn} onClick={() => void handleDelete()} disabled={streaming}>
+            삭제
+          </button>
+        ) : null}
       </header>
       {!isNew ? (
         <div className={styles.summaryBar}>
@@ -286,9 +311,15 @@ export function Mk3ChatRoom({ initialId }: Props) {
                   <div className={styles.bubble}>{msg.content}</div>
                   {!msg.id.startsWith("temp-") ? (
                     <div className={styles.msgActions}>
-                      <button type="button" className={styles.msgBtn} onClick={() => startEdit(msg)}>수정</button>
-                      <button type="button" className={styles.msgBtn} onClick={() => void toggleHidden(msg)}>{msg.is_hidden ? "복원" : "숨김"}</button>
-                      <button type="button" className={`${styles.msgBtn} ${styles.msgBtnDelete}`} onClick={() => void removeMessage(msg)}>삭제</button>
+                      <button type="button" className={styles.msgBtn} onClick={() => startEdit(msg)} title="수정">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button type="button" className={styles.msgBtn} onClick={() => void toggleHidden(msg)} title="숨기기">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      </button>
+                      <button type="button" className={`${styles.msgBtn} ${styles.msgBtnDelete}`} onClick={() => void removeMessage(msg)} title="삭제">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
                     </div>
                   ) : null}
                 </div>
@@ -311,22 +342,25 @@ export function Mk3ChatRoom({ initialId }: Props) {
       {error ? <div className={styles.error}>{error}</div> : null}
 
       {!readOnly ? <div className={styles.composer}>
-        <input
+        <textarea
+          ref={inputRef}
           className={styles.input}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          rows={1}
+          onChange={(e) => {
+            setInput(e.target.value);
+            e.target.style.height = "auto";
+            e.target.style.height = `${e.target.scrollHeight}px`;
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               void send();
             }
           }}
-          placeholder="메시지 입력"
+          placeholder="메시지 입력 (Enter 전송 / Shift+Enter 줄바꿈)"
           disabled={streaming}
         />
-        <button type="button" className={styles.send} onClick={() => void send()} disabled={streaming || !input.trim()}>
-          {streaming ? "..." : "전송"}
-        </button>
       </div> : null}
     </main>
   );
