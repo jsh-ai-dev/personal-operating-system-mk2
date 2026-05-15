@@ -236,6 +236,10 @@
   color: #1f2937;
   margin-bottom: 6px;
 }
+.summaryContent h2,
+.summaryContent h3 {
+  margin-bottom: 4px;
+}
 .summaryExpanded {
   max-height: none;
   mask-image: none;

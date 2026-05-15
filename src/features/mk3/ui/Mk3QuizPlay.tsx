@@ -6,11 +6,21 @@ import { useEffect, useMemo, useState } from "react";
 import { getConversation, type QuizQuestion } from "@/features/mk3/application/chatApi";
 import styles from "@/features/mk3/ui/Mk3QuizPlay.module.css";
 
+type ShuffledQuestion = QuizQuestion & { displayOptions: string[]; displayAnswer: number };
+
+function shuffle(questions: QuizQuestion[]): ShuffledQuestion[] {
+  return questions.map((q) => {
+    const correctText = q.options[q.answer];
+    const displayOptions = [...q.options].sort(() => Math.random() - 0.5);
+    return { ...q, displayOptions, displayAnswer: displayOptions.indexOf(correctText) };
+  });
+}
+
 type Props = { id: string };
 
 export function Mk3QuizPlay({ id }: Props) {
   const [title, setTitle] = useState("");
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<ShuffledQuestion[]>([]);
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -20,7 +30,7 @@ export function Mk3QuizPlay({ id }: Props) {
     void getConversation(id)
       .then((conv) => {
         setTitle(conv.title);
-        setQuestions(conv.quiz ?? []);
+        setQuestions(shuffle(conv.quiz ?? []));
       })
       .catch(() => {
         setQuestions([]);
@@ -28,7 +38,7 @@ export function Mk3QuizPlay({ id }: Props) {
   }, [id]);
 
   const finished = useMemo(() => questions.length > 0 && results.length === questions.length, [questions, results]);
-  const isCorrect = selected !== null && questions[current] && selected === questions[current].answer;
+  const isCorrect = selected !== null && questions[current] && selected === questions[current].displayAnswer;
 
   function answered() {
     return selected !== null || revealed;
@@ -37,7 +47,7 @@ export function Mk3QuizPlay({ id }: Props) {
   function selectOption(idx: number) {
     if (answered()) return;
     setSelected(idx);
-    setResults((prev) => [...prev, idx === questions[current]?.answer]);
+    setResults((prev) => [...prev, idx === questions[current]?.displayAnswer]);
   }
 
   function revealAnswer() {
@@ -53,6 +63,9 @@ export function Mk3QuizPlay({ id }: Props) {
   }
 
   function restart() {
+    void getConversation(id).then((conv) => {
+      setQuestions(shuffle(conv.quiz ?? []));
+    });
     setCurrent(0);
     setSelected(null);
     setRevealed(false);
@@ -63,7 +76,7 @@ export function Mk3QuizPlay({ id }: Props) {
     if (!answered()) return styles.opt;
     const q = questions[current];
     if (!q) return styles.opt;
-    if (idx === q.answer) return `${styles.opt} ${styles.optCorrect}`;
+    if (idx === q.displayAnswer) return `${styles.opt} ${styles.optCorrect}`;
     if (!revealed && idx === selected) return `${styles.opt} ${styles.optWrong}`;
     return `${styles.opt} ${styles.optDim}`;
   }
@@ -89,9 +102,9 @@ export function Mk3QuizPlay({ id }: Props) {
             <section>
               <p className={styles.question}>{questions[current]?.question}</p>
               <div className={styles.options}>
-                {questions[current]?.options.map((opt, idx) => (
+                {questions[current]?.displayOptions.map((opt, idx) => (
                   <button key={idx} type="button" className={optionClass(idx)} onClick={() => selectOption(idx)}>
-                    {opt}
+                    {["A", "B", "C", "D"][idx]}. {opt}
                   </button>
                 ))}
               </div>

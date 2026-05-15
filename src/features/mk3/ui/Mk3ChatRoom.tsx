@@ -187,6 +187,7 @@ export function Mk3ChatRoom({ initialId }: Props) {
       .replace(/^---$/gm, "<hr>")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*([^*\n]+?)\*/g, "<em>$1</em>")
+      .replace(/<\/(h[23])>\n+/g, "</$1>")
       .replace(/\n/g, "<br>");
   }
 

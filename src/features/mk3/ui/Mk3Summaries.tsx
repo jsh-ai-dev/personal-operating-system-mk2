@@ -76,6 +76,7 @@ function renderSummary(text: string): string {
     .replace(/^---$/gm, "<hr>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*\n]+?)\*/g, "<em>$1</em>")
+    .replace(/<\/(h[23])>\n+/g, "</$1>")  // 헤딩 직후 빈 줄 제거
     .replace(/\n/g, "<br>");
 }
 
