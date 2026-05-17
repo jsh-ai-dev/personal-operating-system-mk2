@@ -74,6 +74,11 @@ export function LoginForm() {
           {pending ? "처리 중…" : "로그인"}
         </button>
       </form>
+      <div className={styles.demo}>
+        <p className={styles.demoTitle}>데모 계정</p>
+        <p className={styles.demoInfo}>ID: demo@demo.com</p>
+        <p className={styles.demoInfo}>PW: demo123!</p>
+      </div>
       <p className={styles.footer}>
         계정이 없으신가요? <Link href="/register">회원가입</Link>
       </p>

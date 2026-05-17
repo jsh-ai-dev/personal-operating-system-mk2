@@ -71,6 +71,28 @@
   cursor: not-allowed;
 }
 
+.demo {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.demoTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.demoInfo {
+  font-size: 13px;
+  color: #374151;
+  font-family: monospace;
+  line-height: 1.6;
+}
+
 .footer {
   margin-top: 18px;
   font-size: 14px;

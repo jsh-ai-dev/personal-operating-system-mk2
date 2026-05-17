@@ -27,7 +27,7 @@ spec:
       containers:
         - name: auth
           image: personal-operating-system-mk2-auth:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 3002
           env:

@@ -51,3 +51,6 @@ k8s/overlays/aws/secret.aws.yaml
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+CLAUDE.md
+AGENTS.md
