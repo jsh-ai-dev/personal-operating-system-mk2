@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { parseErrorMessage } from "@/lib/api/parseErrorMessage";
 import styles from "@/components/app-shell/AppShell.module.css";
 
 const NAV_ITEMS = [
+  { href: "/admin/page-views", label: "Admin", adminOnly: true },
   { href: "/calendar", label: "Calendar" },
   { href: "/notes", label: "Notes" },
   { href: "/mk3/dashboard", label: "AI Dashboard" },
@@ -18,10 +19,46 @@ const NAV_ITEMS = [
   { href: "/mk3/news", label: "AI News" },
 ] as const;
 
+type CurrentUserResponse = {
+  user?: {
+    email?: string;
+  };
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const mobileMenuToggleRef = useRef<HTMLInputElement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadCurrentUser() {
+      try {
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as CurrentUserResponse;
+        if (alive) {
+          setIsAdmin(data.user?.email?.toLowerCase() === "admin@gmail.com");
+        }
+      } catch {
+        if (alive) setIsAdmin(false);
+      }
+    }
+
+    void loadCurrentUser();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const navItems = useMemo(
+    () => NAV_ITEMS.filter((item) => !("adminOnly" in item) || isAdmin),
+    [isAdmin],
+  );
 
   function closeMobileMenu() {
     if (mobileMenuToggleRef.current) {
@@ -31,6 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function isActive(href: string) {
     if (href === "/notes") return pathname.startsWith("/notes");
+    if (href === "/admin/page-views") return pathname.startsWith("/admin/page-views");
     if (href === "/mk3/dashboard") return pathname.startsWith("/mk3/dashboard");
     if (href === "/mk3/chat") return pathname.startsWith("/mk3/chat");
     if (href === "/mk3/search") return pathname.startsWith("/mk3/search");
@@ -40,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return pathname === href;
   }
 
-  const currentLabel = NAV_ITEMS.find((item) => isActive(item.href))?.label ?? "Menu";
+  const currentLabel = navItems.find((item) => isActive(item.href))?.label ?? "Menu";
 
   async function logout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     linkClassName = styles.navLink,
     activeClassName = styles.navLinkActive,
   ) {
-    return NAV_ITEMS.map((item) => {
+    return navItems.map((item) => {
       const active = isActive(item.href);
       return (
         <Link

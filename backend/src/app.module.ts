@@ -14,6 +14,7 @@ import {
 import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
 import Redis from "ioredis";
 
+import { AdminModule } from "./admin/admin.module";
 import { JwtAuthModule } from "./auth/jwt-auth.module";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard";
 import { ChecklistModule } from "./checklist/checklist.module";
@@ -78,6 +79,7 @@ function resolveEnvFilePath(): string {
     }),
     PrismaModule,
     JwtAuthModule,
+    AdminModule,
     HealthModule,
     MemoModule,
     ChecklistModule,

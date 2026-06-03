@@ -11,16 +11,22 @@ function getAuthServiceUrl(): string {
   return "http://127.0.0.1:3002";
 }
 
-async function isSessionValid(token: string): Promise<boolean> {
+type SessionUser = {
+  email?: string;
+};
+
+async function getSessionUser(token: string): Promise<SessionUser | null> {
   try {
     const res = await fetch(`${getAuthServiceUrl()}/api/auth/me`, {
       method: "GET",
       headers: { authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    return res.ok;
+    if (!res.ok) return null;
+    const data = (await res.json()) as { user?: SessionUser };
+    return data.user ?? null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -45,8 +51,8 @@ export async function middleware(request: NextRequest) {
     if (!hasSession) {
       return NextResponse.next();
     }
-    const valid = await isSessionValid(token);
-    if (valid) {
+    const user = await getSessionUser(token);
+    if (user) {
       return NextResponse.redirect(new URL("/calendar", request.url));
     }
     return redirectWithCookieClear(new URL("/login", request.url));
@@ -57,15 +63,23 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/calendar/") ||
     pathname === "/notes" ||
     pathname.startsWith("/notes/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
     pathname === "/mk3" ||
     pathname.startsWith("/mk3/")
   ) {
     if (!hasSession) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    const valid = await isSessionValid(token);
-    if (!valid) {
+    const user = await getSessionUser(token);
+    if (!user) {
       return redirectWithCookieClear(new URL("/login", request.url));
+    }
+    if (
+      (pathname === "/admin" || pathname.startsWith("/admin/")) &&
+      user.email?.toLowerCase() !== "admin@gmail.com"
+    ) {
+      return NextResponse.redirect(new URL("/calendar", request.url));
     }
     return NextResponse.next();
   }
@@ -74,8 +88,8 @@ export async function middleware(request: NextRequest) {
     if (!hasSession) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    const valid = await isSessionValid(token);
-    if (valid) {
+    const user = await getSessionUser(token);
+    if (user) {
       return NextResponse.redirect(new URL("/calendar", request.url));
     }
     return redirectWithCookieClear(new URL("/login", request.url));
@@ -93,6 +107,8 @@ export const config = {
     "/calendar/:path*",
     "/notes",
     "/notes/:path*",
+    "/admin",
+    "/admin/:path*",
     "/mk3",
     "/mk3/:path*",
   ],
