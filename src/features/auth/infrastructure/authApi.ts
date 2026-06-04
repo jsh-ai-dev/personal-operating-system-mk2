@@ -1,6 +1,6 @@
 import { parseErrorMessage } from "@/lib/api/parseErrorMessage";
 
-export type AuthUserDto = { id: string; email: string };
+export type AuthUserDto = { id: string; email: string; isDemo?: boolean };
 
 /** 로그인/가입 성공 시 본문에는 사용자 정보만 옵니다. JWT는 httpOnly 쿠키로만 전달됩니다. */
 export type AuthSessionResponse = {
@@ -35,6 +35,20 @@ export async function registerRemote(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(await parseErrorMessage(res));
+  return res.json() as Promise<AuthSessionResponse>;
+}
+
+export async function changePasswordRemote(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<AuthSessionResponse> {
+  const res = await fetch("/api/auth/password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
     credentials: "include",
   });
   if (!res.ok) throw new Error(await parseErrorMessage(res));

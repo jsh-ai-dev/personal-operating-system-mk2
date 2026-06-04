@@ -63,6 +63,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/calendar/") ||
     pathname === "/notes" ||
     pathname.startsWith("/notes/") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
     pathname === "/mk3" ||
@@ -107,6 +109,8 @@ export const config = {
     "/calendar/:path*",
     "/notes",
     "/notes/:path*",
+    "/account",
+    "/account/:path*",
     "/admin",
     "/admin/:path*",
     "/mk3",

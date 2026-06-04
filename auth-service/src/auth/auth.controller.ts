@@ -12,6 +12,7 @@ import type { Request } from "express";
 
 import { Public } from "../common/decorators/public.decorator";
 import { AuthService } from "./auth.service";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import type { JwtUser } from "./jwt.strategy";
@@ -42,7 +43,13 @@ export class AuthController {
   @Get("me")
   getMe(@Req() req: AuthedRequest) {
     const u = req.user;
-    return { user: { id: u.sub, email: u.email } };
+    return { user: { id: u.sub, email: u.email, isDemo: this.authService.isDemoEmail(u.email) } };
+  }
+
+  @Post("password")
+  @HttpCode(HttpStatus.OK)
+  changePassword(@Req() req: AuthedRequest, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user, dto);
   }
 
   /** 현재 토큰을 Redis 블랙리스트에 올린 뒤 클라이언트는 쿠키 삭제 */

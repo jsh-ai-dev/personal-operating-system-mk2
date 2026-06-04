@@ -79,6 +79,7 @@
   width: 100%;
 }
 
+.passwordButton,
 .logoutButton {
   width: 100%;
   padding: 8px 12px;
@@ -93,6 +94,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.passwordButton {
+  display: block;
+  text-align: center;
+}
+
+.passwordButton:hover,
 .logoutButton:hover {
   background: #f9fafb;
   color: #111827;

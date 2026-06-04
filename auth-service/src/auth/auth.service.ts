@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 
 import { PrismaService } from "../prisma/prisma.service";
+import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { JwtUser } from "./jwt.strategy";
@@ -41,6 +45,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly revocation: JwtRevocationService,
+    private readonly config: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -69,6 +74,37 @@ export class AuthService {
       throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
     }
     return await this.buildAuthResponse(user.id, user.email);
+  }
+
+  isDemoEmail(email: string): boolean {
+    const demoEmail = this.config.get<string>("DEMO_EMAIL")?.trim().toLowerCase();
+    return Boolean(demoEmail && email.trim().toLowerCase() === demoEmail);
+  }
+
+  async changePassword(user: JwtUser, dto: ChangePasswordDto) {
+    if (this.isDemoEmail(user.email)) {
+      throw new ForbiddenException("Demo account password cannot be changed.");
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException("New password must be different.");
+    }
+
+    const record = await this.prisma.user.findUnique({
+      where: { id: user.sub },
+    });
+    if (!record || !(await bcrypt.compare(dto.currentPassword, record.passwordHash))) {
+      throw new UnauthorizedException("Current password is incorrect.");
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: user.sub },
+      data: { passwordHash },
+    });
+    await this.revocation.incrementSessionVersion(user.sub);
+
+    return this.buildAuthResponse(record.id, record.email);
   }
 
   private async buildAuthResponse(userId: string, email: string) {

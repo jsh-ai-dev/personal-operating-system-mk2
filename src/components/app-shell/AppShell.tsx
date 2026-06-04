@@ -22,6 +22,7 @@ const NAV_ITEMS = [
 type CurrentUserResponse = {
   user?: {
     email?: string;
+    isDemo?: boolean;
   };
 };
 
@@ -30,6 +31,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const mobileMenuToggleRef = useRef<HTMLInputElement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
+  const [currentUserLoaded, setCurrentUserLoaded] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -39,13 +42,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/auth/me", {
           credentials: "include",
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (alive) setCurrentUserLoaded(true);
+          return;
+        }
         const data = (await res.json()) as CurrentUserResponse;
         if (alive) {
           setIsAdmin(data.user?.email?.toLowerCase() === "admin@gmail.com");
+          setIsDemo(Boolean(data.user?.isDemo));
+          setCurrentUserLoaded(true);
         }
       } catch {
-        if (alive) setIsAdmin(false);
+        if (alive) {
+          setIsAdmin(false);
+          setIsDemo(false);
+          setCurrentUserLoaded(true);
+        }
       }
     }
 
@@ -56,7 +68,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const navItems = useMemo(
-    () => NAV_ITEMS.filter((item) => !("adminOnly" in item) || isAdmin),
+    () =>
+      NAV_ITEMS.filter((item) => {
+        if ("adminOnly" in item && !isAdmin) return false;
+        return true;
+      }),
     [isAdmin],
   );
 
@@ -132,6 +148,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   function renderSessionActions() {
     return (
       <div className={styles.sessionActions}>
+        {currentUserLoaded && !isDemo ? (
+          <Link
+            href="/account/password"
+            className={styles.passwordButton}
+            onClick={closeMobileMenu}
+          >
+            비밀번호 변경
+          </Link>
+        ) : null}
         <form action="/api/auth/logout" method="post" onSubmit={(e) => void logout(e)}>
           <button type="submit" className={styles.logoutButton}>
             로그아웃
