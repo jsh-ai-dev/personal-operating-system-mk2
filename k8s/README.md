@@ -31,6 +31,23 @@ kubectl -n pos-mk2 get all
 Use this when DB is external (RDS) and app workloads run on EKS.
 Redis can run on a separate data-box EC2.
 
+### Cluster-level settings
+
+Apply these once per k3s cluster. The Traefik Service uses
+`externalTrafficPolicy: Local` so request handlers can use the original
+forwarded request metadata instead of a Kubernetes internal source address.
+
+```bash
+kubectl apply -k k8s/cluster/aws
+kubectl -n kube-system get svc traefik -o jsonpath='{.spec.externalTrafficPolicy}{"\n"}'
+```
+
+The expected output is:
+
+```text
+Local
+```
+
 1) Prepare overlay secret:
 
 ```bash
