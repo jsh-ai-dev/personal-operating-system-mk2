@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   fetchAdminPageViews,
+  type AdminPageViewFilterOption,
   type AdminPageView,
 } from "@/features/admin/application/pageViewsApi";
 import styles from "@/features/admin/ui/AdminPageViews.module.css";
@@ -22,8 +23,16 @@ function formatDateTime(value: string): string {
   });
 }
 
+function filterValues(options: AdminPageViewFilterOption[]): string[] {
+  return options.map((option) => option.value);
+}
+
 export function AdminPageViews() {
   const [rows, setRows] = useState<AdminPageView[]>([]);
+  const [ipOptions, setIpOptions] = useState<AdminPageViewFilterOption[]>([]);
+  const [emailOptions, setEmailOptions] = useState<AdminPageViewFilterOption[]>([]);
+  const [selectedIps, setSelectedIps] = useState<string[] | null>(null);
+  const [selectedEmails, setSelectedEmails] = useState<string[] | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [total, setTotal] = useState(0);
@@ -37,9 +46,20 @@ export function AdminPageViews() {
     async function load() {
       setLoading(true);
       try {
-        const data = await fetchAdminPageViews(page);
+        const filtersReady = selectedIps !== null && selectedEmails !== null;
+        const data = await fetchAdminPageViews({
+          page,
+          ipAddresses: filtersReady ? selectedIps : undefined,
+          emails: filtersReady ? selectedEmails : undefined,
+        });
         if (!alive) return;
         setRows(data.items);
+        setIpOptions(data.filters.ipAddresses);
+        setEmailOptions(data.filters.emails);
+        if (!filtersReady) {
+          setSelectedIps(filterValues(data.filters.ipAddresses));
+          setSelectedEmails(filterValues(data.filters.emails));
+        }
         setPageSize(data.pageSize);
         setTotal(data.total);
         setTotalPages(data.totalPages);
@@ -56,10 +76,32 @@ export function AdminPageViews() {
     return () => {
       alive = false;
     };
-  }, [page]);
+  }, [page, selectedEmails, selectedIps]);
 
   const fromRow = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const toRow = Math.min(page * pageSize, total);
+  const activeIps = selectedIps ?? filterValues(ipOptions);
+  const activeEmails = selectedEmails ?? filterValues(emailOptions);
+
+  function toggleIp(value: string) {
+    setPage(1);
+    setSelectedIps((current) => {
+      const selected = current ?? filterValues(ipOptions);
+      return selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value];
+    });
+  }
+
+  function toggleEmail(value: string) {
+    setPage(1);
+    setSelectedEmails((current) => {
+      const selected = current ?? filterValues(emailOptions);
+      return selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value];
+    });
+  }
 
   return (
     <main className={styles.page}>
@@ -81,6 +123,56 @@ export function AdminPageViews() {
 
       {!loading && !error ? (
         <section className={styles.card}>
+          <div className={styles.filters}>
+            <div className={styles.filterGroup}>
+              <div className={styles.filterHeader}>
+                <h2 className={styles.filterTitle}>IP Filters</h2>
+                <span className={styles.filterMeta}>
+                  {activeIps.length}/{ipOptions.length} selected
+                </span>
+              </div>
+              <div className={styles.chips}>
+                {ipOptions.map((option) => {
+                  const active = activeIps.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.chip} ${active ? styles.chipActive : ""}`}
+                      onClick={() => toggleIp(option.value)}
+                    >
+                      <span>{option.value}</span>
+                      <small>{option.count}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className={styles.filterGroup}>
+              <div className={styles.filterHeader}>
+                <h2 className={styles.filterTitle}>Account Filters</h2>
+                <span className={styles.filterMeta}>
+                  {activeEmails.length}/{emailOptions.length} selected
+                </span>
+              </div>
+              <div className={styles.chips}>
+                {emailOptions.map((option) => {
+                  const active = activeEmails.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.chip} ${active ? styles.chipActive : ""}`}
+                      onClick={() => toggleEmail(option.value)}
+                    >
+                      <span>{option.value}</span>
+                      <small>{option.count}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
@@ -105,7 +197,7 @@ export function AdminPageViews() {
               </tbody>
             </table>
           </div>
-          {rows.length === 0 ? <p className={styles.empty}>No page views recorded.</p> : null}
+          {rows.length === 0 ? <p className={styles.empty}>No page views match the selected filters.</p> : null}
           <div className={styles.pagination}>
             <button
               type="button"
