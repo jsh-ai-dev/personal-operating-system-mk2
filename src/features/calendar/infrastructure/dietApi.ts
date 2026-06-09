@@ -16,6 +16,11 @@ export type MealSummaryDto = {
   nutrients: NutrientsDto;
 };
 
+export type MealCopyCandidateDto = MealSummaryDto & {
+  date_key: string;
+  meal_key: MealKey;
+};
+
 export type DietMessageDto = {
   role: "user" | "assistant";
   content: string;
@@ -51,6 +56,10 @@ export type AnalyzeDietResponse = {
   tokens_input: number;
   tokens_output: number;
   cost_usd: number;
+};
+
+export type RecentDietMealsResponse = {
+  candidates: MealCopyCandidateDto[];
 };
 
 const emptyNutrients = (): NutrientsDto => ({
@@ -133,6 +142,15 @@ export async function fetchDietDay(dateKey: string): Promise<DietDayDto> {
   return readJsonSafe<DietDayDto>(res, emptyDietDay(dateKey));
 }
 
+export async function fetchRecentDietMeals(): Promise<MealCopyCandidateDto[]> {
+  const res = await fetch("/api/mk3/v1/diet/days/recent-meals?days=14&limit=20", {
+    credentials: "include",
+  });
+  await throwIfNotOk(res);
+  const body = await readJsonSafe<RecentDietMealsResponse>(res, { candidates: [] });
+  return body.candidates;
+}
+
 export async function deleteDietDay(dateKey: string): Promise<void> {
   const res = await fetch(`/api/mk3/v1/diet/days/${dateKey}`, {
     method: "DELETE",
@@ -159,4 +177,24 @@ export async function analyzeDietDay(
     tokens_output: 0,
     cost_usd: 0,
   });
+}
+
+export async function copyDietMeal(
+  targetDateKey: string,
+  sourceDateKey: string,
+  sourceMealKey: MealKey,
+  targetMealKey: MealKey,
+): Promise<DietDayDto> {
+  const res = await fetch(`/api/mk3/v1/diet/days/${targetDateKey}/copy-meal`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source_date_key: sourceDateKey,
+      source_meal_key: sourceMealKey,
+      target_meal_key: targetMealKey,
+    }),
+  });
+  await throwIfNotOk(res);
+  return readJsonSafe<DietDayDto>(res, emptyDietDay(targetDateKey));
 }
