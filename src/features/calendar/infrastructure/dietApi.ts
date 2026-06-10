@@ -198,3 +198,19 @@ export async function copyDietMeal(
   await throwIfNotOk(res);
   return readJsonSafe<DietDayDto>(res, emptyDietDay(targetDateKey));
 }
+
+export async function clearDietMeal(
+  targetDateKey: string,
+  targetMealKey: MealKey,
+): Promise<DietDayDto> {
+  const res = await fetch(`/api/mk3/v1/diet/days/${targetDateKey}/clear-meal`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      target_meal_key: targetMealKey,
+    }),
+  });
+  await throwIfNotOk(res);
+  return readJsonSafe<DietDayDto>(res, emptyDietDay(targetDateKey));
+}

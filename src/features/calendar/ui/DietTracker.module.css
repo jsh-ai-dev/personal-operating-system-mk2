@@ -199,22 +199,33 @@
 }
 
 .mealCopyButton {
-  width: 100%;
-  margin-top: 8px;
-  padding: 6px 8px;
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  background: #f0fdf4;
-  color: #166534;
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .mealCopyButton:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.mealCopyButton[aria-expanded="true"] {
   border-color: #86efac;
   background: #dcfce7;
+  color: #166534;
 }
 
 .mealCopyButton:disabled {
@@ -237,7 +248,23 @@
   font-variant-numeric: tabular-nums;
 }
 
-.macroLine,
+.macroLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.macroLine span {
+  min-width: 0;
+}
+
 .itemLine {
   margin: 6px 0 0;
   color: #4b5563;
@@ -300,33 +327,13 @@
 
 .copyPanel {
   margin-top: 10px;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid #bbf7d0;
   border-radius: 10px;
   background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
 }
 
-.copyPanelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.copyPanelHeader strong {
-  color: #14532d;
-  font-size: 14px;
-}
-
-.copyPanelHeader p {
-  margin: 4px 0 0;
-  color: #166534;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .copySection {
-  margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -345,7 +352,7 @@
 
 .candidateButton {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
   padding: 9px 10px;
   border: 1px solid #e5e7eb;
@@ -368,36 +375,54 @@
   cursor: not-allowed;
 }
 
-.candidateButton span {
-  overflow: hidden;
+.candidateMeta {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.candidateMeta span {
+  flex: 0 0 auto;
+  color: #111827;
   font-size: 12px;
   font-weight: 650;
+  white-space: nowrap;
+}
+
+.candidateMeta small {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.candidateButton strong {
+.candidateMeta strong {
+  flex: 0 0 auto;
   color: #166534;
-  font-size: 13px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.candidateButton small {
+.candidateItems {
+  overflow: hidden;
   color: #6b7280;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.warningText,
 .emptyText,
 .notice {
   margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.45;
-}
-
-.warningText {
-  color: #92400e;
 }
 
 .emptyText {

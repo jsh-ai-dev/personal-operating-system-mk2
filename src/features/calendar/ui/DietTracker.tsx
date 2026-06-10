@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { toDateKey } from "@/features/calendar/domain/dateKey";
 import {
   analyzeDietDay,
+  clearDietMeal,
   copyDietMeal,
   deleteDietDay,
   emptyDietDay,
@@ -117,17 +118,8 @@ function isMealNonEmpty(meal: MealSummaryDto): boolean {
   );
 }
 
-function candidatesFromDay(day: DietDayDto): MealCopyCandidateDto[] {
-  return MEAL_KEYS.map((mealKey) => ({
-    date_key: day.date_key,
-    meal_key: mealKey,
-    ...day.meals[mealKey],
-  })).filter(isMealNonEmpty);
-}
-
-function candidateTitle(candidate: MealCopyCandidateDto): string {
-  const items = candidate.items.length > 0 ? candidate.items.join(", ") : "음식명 없음";
-  return `${candidate.date_key} ${candidate.label} · ${items}`;
+function candidateItems(candidate: MealCopyCandidateDto): string {
+  return candidate.items.length > 0 ? candidate.items.join(", ") : "음식명 없음";
 }
 
 export function DietTracker({ selectedDate }: DietTrackerProps) {
@@ -146,9 +138,6 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
   const [copyTarget, setCopyTarget] = useState<MealKey | null>(null);
   const [recentMeals, setRecentMeals] = useState<MealCopyCandidateDto[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
-  const [sourceDateKey, setSourceDateKey] = useState("");
-  const [sourceDay, setSourceDay] = useState<DietDayDto | null>(null);
-  const [sourceDayLoading, setSourceDayLoading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -266,11 +255,15 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
 
   const openCopyPanel = async (target: MealKey) => {
     if (!dateKey) return;
+    if (copyTarget === target) {
+      if (copyingMeal) return;
+      setCopyTarget(null);
+      return;
+    }
     setCopyTarget(target);
-    setSourceDateKey("");
-    setSourceDay(null);
     setError(null);
     setNotice(null);
+    setRecentMeals([]);
     setRecentLoading(true);
     try {
       setRecentMeals(await fetchRecentDietMeals());
@@ -279,28 +272,6 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
       setError(e instanceof Error ? e.message : "최근 식사 후보를 불러오지 못했습니다.");
     } finally {
       setRecentLoading(false);
-    }
-  };
-
-  const closeCopyPanel = () => {
-    if (copyingMeal) return;
-    setCopyTarget(null);
-    setSourceDateKey("");
-    setSourceDay(null);
-  };
-
-  const handleSourceDate = async (nextDateKey: string) => {
-    setSourceDateKey(nextDateKey);
-    setSourceDay(null);
-    if (!nextDateKey) return;
-    setSourceDayLoading(true);
-    setError(null);
-    try {
-      setSourceDay(await fetchDietDay(nextDateKey));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "원본 날짜의 식단을 불러오지 못했습니다.");
-    } finally {
-      setSourceDayLoading(false);
     }
   };
 
@@ -323,10 +294,32 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
       setDay(next);
       setNotice(`${candidate.date_key} ${candidate.label}을 ${next.date_key} ${next.meals[copyTarget].label}로 가져왔습니다.`);
       setCopyTarget(null);
-      setSourceDateKey("");
-      setSourceDay(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "식사 가져오기에 실패했습니다.");
+    } finally {
+      setCopyingMeal(false);
+    }
+  };
+
+  const handleClearMeal = async () => {
+    if (!dateKey || !copyTarget || copyingMeal) return;
+    const targetMeal = day.meals[copyTarget];
+    if (isMealNonEmpty(targetMeal)) {
+      const ok = window.confirm(`${day.date_key} ${targetMeal.label} 기록을 비울까요?`);
+      if (!ok) return;
+    }
+
+    setCopyingMeal(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const next = await clearDietMeal(dateKey, copyTarget);
+      setWeekTotal((current) => addNutrients(subtractNutrients(current, day.total), next.total));
+      setDay(next);
+      setNotice(`${next.date_key} ${next.meals[copyTarget].label} 기록을 비웠습니다.`);
+      setCopyTarget(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "식사 기록 비우기에 실패했습니다.");
     } finally {
       setCopyingMeal(false);
     }
@@ -422,7 +415,6 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
       inputMode: "numeric",
     },
   ];
-  const manualCandidates = sourceDay ? candidatesFromDay(sourceDay) : [];
   const targetMeal = copyTarget ? day.meals[copyTarget] : null;
 
   return (
@@ -485,8 +477,6 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
       </div>
 
       <div className={styles.dayPanel}>
-        {dayLoading ? <span className={styles.statusText}>불러오는 중</span> : null}
-
         <div className={styles.summaryGrid}>
           {MEAL_KEYS.map((key) => {
             const meal = day.meals[key];
@@ -496,18 +486,22 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
                   <h4 className={styles.mealTitle}>{meal.label}</h4>
                   <strong className={styles.kcal}>{meal.nutrients.calories} kcal</strong>
                 </div>
-                <p className={styles.macroLine}>{macroText(meal.nutrients)}</p>
+                <div className={styles.macroLine}>
+                  <span>{macroText(meal.nutrients)}</span>
+                  <button
+                    type="button"
+                    className={styles.mealCopyButton}
+                    onClick={() => openCopyPanel(key)}
+                    disabled={!dateKey || dayLoading || copyingMeal}
+                    aria-expanded={copyTarget === key}
+                    aria-label={`${meal.label} 식사 가져오기 ${copyTarget === key ? "접기" : "펼치기"}`}
+                  >
+                    {copyTarget === key ? "-" : "+"}
+                  </button>
+                </div>
                 <p className={styles.itemLine}>
                   {meal.items.length > 0 ? meal.items.join(", ") : "기록 없음"}
                 </p>
-                <button
-                  type="button"
-                  className={styles.mealCopyButton}
-                  onClick={() => openCopyPanel(key)}
-                  disabled={!dateKey || dayLoading || copyingMeal}
-                >
-                  가져오기
-                </button>
               </article>
             );
           })}
@@ -515,27 +509,25 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
 
         {copyTarget && targetMeal ? (
           <div className={styles.copyPanel}>
-            <div className={styles.copyPanelHeader}>
-              <div>
-                <strong>{day.date_key} {targetMeal.label}로 가져오기</strong>
-                <p>음식 목록과 영양 수치만 복사합니다. AI 분석은 실행하지 않습니다.</p>
-              </div>
-              <button type="button" className={styles.historyToggleAction} onClick={closeCopyPanel}>
-                닫기
-              </button>
-            </div>
-
-            {isMealNonEmpty(targetMeal) ? (
-              <p className={styles.warningText}>대상 식사에 기존 기록이 있어 선택 시 교체 확인을 합니다.</p>
-            ) : null}
-
             <div className={styles.copySection}>
               <strong>최근 식사</strong>
-              {recentLoading ? <span className={styles.statusText}>최근 식사 불러오는 중</span> : null}
               {!recentLoading && recentMeals.length === 0 ? (
                 <p className={styles.emptyText}>최근 14일 안에 복사할 식사가 없습니다.</p>
               ) : null}
               <div className={styles.candidateList}>
+                <button
+                  type="button"
+                  className={styles.candidateButton}
+                  onClick={handleClearMeal}
+                  disabled={copyingMeal}
+                >
+                  <span className={styles.candidateMeta}>
+                    <span>{day.date_key} {targetMeal.label}</span>
+                    <small>{macroText(emptyNutrients())}</small>
+                    <strong>0 kcal</strong>
+                  </span>
+                  <span className={styles.candidateItems}>기록 없음</span>
+                </button>
                 {recentMeals.map((candidate) => (
                   <button
                     key={`${candidate.date_key}-${candidate.meal_key}`}
@@ -544,40 +536,12 @@ export function DietTracker({ selectedDate }: DietTrackerProps) {
                     onClick={() => handleCopyMeal(candidate)}
                     disabled={copyingMeal}
                   >
-                    <span>{candidateTitle(candidate)}</span>
-                    <strong>{candidate.nutrients.calories} kcal</strong>
-                    <small>{macroText(candidate.nutrients)}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.copySection}>
-              <label className={styles.inputLabel}>
-                원본 날짜 직접 선택
-                <input
-                  className={styles.input}
-                  type="date"
-                  value={sourceDateKey}
-                  onChange={(e) => handleSourceDate(e.target.value)}
-                />
-              </label>
-              {sourceDayLoading ? <span className={styles.statusText}>원본 날짜 불러오는 중</span> : null}
-              {sourceDateKey && !sourceDayLoading && manualCandidates.length === 0 ? (
-                <p className={styles.emptyText}>선택한 날짜에 복사할 식사가 없습니다.</p>
-              ) : null}
-              <div className={styles.candidateList}>
-                {manualCandidates.map((candidate) => (
-                  <button
-                    key={`manual-${candidate.date_key}-${candidate.meal_key}`}
-                    type="button"
-                    className={styles.candidateButton}
-                    onClick={() => handleCopyMeal(candidate)}
-                    disabled={copyingMeal}
-                  >
-                    <span>{candidateTitle(candidate)}</span>
-                    <strong>{candidate.nutrients.calories} kcal</strong>
-                    <small>{macroText(candidate.nutrients)}</small>
+                    <span className={styles.candidateMeta}>
+                      <span>{candidate.date_key} {candidate.label}</span>
+                      <small>{macroText(candidate.nutrients)}</small>
+                      <strong>{candidate.nutrients.calories} kcal</strong>
+                    </span>
+                    <span className={styles.candidateItems}>{candidateItems(candidate)}</span>
                   </button>
                 ))}
               </div>
