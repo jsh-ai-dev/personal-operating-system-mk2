@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 
-import { indexAllConversations, searchConversations, type IndexResponse, type SearchResult } from "@/features/mk3/application/searchApi";
+import {
+  generateRagAnswer,
+  indexAllConversations,
+  searchConversations,
+  type IndexResponse,
+  type RagAnswerResponse,
+  type SearchResult,
+} from "@/features/mk3/application/searchApi";
 import styles from "@/features/mk3/ui/Mk3Search.module.css";
 
 function sourceLabel(model: string, provider: string): string {
@@ -58,6 +65,9 @@ export function Mk3Search() {
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexResult, setIndexResult] = useState<IndexResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [answerError, setAnswerError] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<RagAnswerResponse | null>(null);
+  const [isAnswering, setIsAnswering] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   async function handleSearch() {
@@ -65,6 +75,8 @@ export function Mk3Search() {
     if (!trimmed || isSearching) return;
 
     setError(null);
+    setAnswerError(null);
+    setAnswer(null);
     setIsSearching(true);
     setHasSearched(true);
     try {
@@ -75,6 +87,23 @@ export function Mk3Search() {
       setResults([]);
     } finally {
       setIsSearching(false);
+    }
+  }
+
+  async function handleGenerateAnswer() {
+    const trimmed = query.trim();
+    if (!trimmed || isAnswering) return;
+
+    setAnswerError(null);
+    setAnswer(null);
+    setIsAnswering(true);
+    try {
+      const response = await generateRagAnswer(trimmed);
+      setAnswer(response);
+    } catch {
+      setAnswerError("답변 생성 중 오류가 발생했습니다. 검색 결과는 유지됩니다.");
+    } finally {
+      setIsAnswering(false);
     }
   }
 
@@ -102,6 +131,8 @@ export function Mk3Search() {
   function openConversation(id: string) {
     window.open(`/mk3/chat/${id}`, "_blank", "noopener,noreferrer");
   }
+
+  const canGenerateAnswer = hasSearched && results.length > 0 && !isSearching;
 
   return (
     <main className={styles.page}>
@@ -148,6 +179,74 @@ export function Mk3Search() {
           </span>
         ) : null}
       </div>
+
+      {canGenerateAnswer ? (
+        <section className={styles.answerSection}>
+          <div className={styles.answerHeader}>
+            <div>
+              <h2 className={styles.answerTitle}>검색 결과 기반 답변</h2>
+              <p className={styles.answerHint}>요약된 과거 대화만 근거로 사용하고, 출처 대화 링크를 함께 보여줍니다.</p>
+            </div>
+            <button
+              type="button"
+              className={styles.answerButton}
+              disabled={isAnswering}
+              onClick={() => void handleGenerateAnswer()}
+            >
+              {isAnswering ? "답변 생성 중..." : "근거로 답변 생성"}
+            </button>
+          </div>
+
+          {answerError ? <p className={styles.answerError}>{answerError}</p> : null}
+
+          {answer ? (
+            <div className={styles.answerPanel}>
+              {answer.status === "answered" ? (
+                <>
+                  <p className={styles.answerText}>{answer.answer}</p>
+                  <div className={styles.answerMeta}>
+                    <span>모델 {answer.model}</span>
+                    <span>
+                      토큰 {answer.tokens_input.toLocaleString("ko-KR")} in /{" "}
+                      {answer.tokens_output.toLocaleString("ko-KR")} out
+                    </span>
+                    <span>
+                      비용 {formatCost(answer.cost_usd)} · 검색 {formatCost(answer.search_cost_usd)}
+                    </span>
+                  </div>
+                  <div className={styles.sourceList}>
+                    {answer.sources.map((source) => (
+                      <article key={source.conversation_id} className={styles.sourceCard}>
+                        <div className={styles.sourceCardTop}>
+                          <span className={`${styles.badge} ${styles[`badge_${source.provider}`] ?? ""}`}>
+                            {sourceLabel(source.model, source.provider)}
+                          </span>
+                          <span className={styles.score} style={{ color: scoreColor(source.score) }}>
+                            유사도 {scorePercent(source.score)}
+                          </span>
+                        </div>
+                        <h3 className={styles.sourceTitle}>{source.title || "(untitled)"}</h3>
+                        <p className={styles.sourceExcerpt}>{source.summary_excerpt}</p>
+                        <div className={styles.sourceFooter}>
+                          <span>생성 {formatDate(source.created_at)}</span>
+                          <a className={styles.sourceLink} href={source.href} target="_blank" rel="noreferrer">
+                            출처 대화 열기 →
+                          </a>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.insufficient}>
+                  <p>{answer.message || "관련 요약 대화가 부족합니다."}</p>
+                  <span>검색 결과 중 요약이 없는 대화는 답변 근거로 사용하지 않습니다.</span>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {hasSearched && !isSearching ? (
         <section className={styles.resultsSection}>
