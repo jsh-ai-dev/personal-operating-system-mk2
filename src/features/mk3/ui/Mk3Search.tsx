@@ -155,7 +155,6 @@ export function Mk3Search() {
           type="text"
           className={styles.searchInput}
           autoComplete="off"
-          placeholder="예: MSA 서비스 간 트랜잭션 처리, AWS 보안 그룹 설정, AI 시스템 프롬프트 작성법..."
           onKeyDown={handleEnterPress}
         />
         <button
@@ -184,8 +183,8 @@ export function Mk3Search() {
         <section className={styles.answerSection}>
           <div className={styles.answerHeader}>
             <div>
-              <h2 className={styles.answerTitle}>검색 결과 기반 답변</h2>
-              <p className={styles.answerHint}>요약된 과거 대화만 근거로 사용하고, 출처 대화 링크를 함께 보여줍니다.</p>
+              <h2 className={styles.answerTitle}>RAG 테스트</h2>
+              <p className={styles.answerHint}>요약된 대화만 근거로 사용</p>
             </div>
             <button
               type="button"
@@ -193,7 +192,7 @@ export function Mk3Search() {
               disabled={isAnswering}
               onClick={() => void handleGenerateAnswer()}
             >
-              {isAnswering ? "답변 생성 중..." : "근거로 답변 생성"}
+              {isAnswering ? "답변 생성 중..." : "답변 생성"}
             </button>
           </div>
 
@@ -210,9 +209,7 @@ export function Mk3Search() {
                       토큰 {answer.tokens_input.toLocaleString("ko-KR")} in /{" "}
                       {answer.tokens_output.toLocaleString("ko-KR")} out
                     </span>
-                    <span>
-                      비용 {formatCost(answer.cost_usd)} · 검색 {formatCost(answer.search_cost_usd)}
-                    </span>
+                    <span>비용 {formatCost(answer.cost_usd)}</span>
                   </div>
                   <div className={styles.sourceList}>
                     {answer.sources.map((source) => (
@@ -240,7 +237,7 @@ export function Mk3Search() {
               ) : (
                 <div className={styles.insufficient}>
                   <p>{answer.message || "관련 요약 대화가 부족합니다."}</p>
-                  <span>검색 결과 중 요약이 없는 대화는 답변 근거로 사용하지 않습니다.</span>
+                  <span>요약이 없는 대화는 답변 근거로 사용하지 않습니다.</span>
                 </div>
               )}
             </div>
