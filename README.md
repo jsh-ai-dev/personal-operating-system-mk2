@@ -55,7 +55,7 @@ Next middleware는 보호 라우트 접근 전에 auth-service의 `/api/auth/me`
 - AI 서비스 구독 Dashboard: ChatGPT, Codex, Claude, Claude Code, Gemini, Cursor 등 CRUD와 사용량 동기화
 - AI Chat: OpenAI, Gemini, Claude SSE 스트리밍 채팅
 - Import/Summary/Quiz: 대화 내역 가져오기, 요약 생성, 퀴즈 생성/풀이
-- AI Search: mk3 Qdrant 벡터 검색
+- AI Search: mk3 Qdrant 벡터 검색, 요약된 대화 기반 RAG 테스트 UI
 - AI News: 뉴스 스크랩, 기업/태그 필터, 기사 분석
 
 ## 저장소 구조
