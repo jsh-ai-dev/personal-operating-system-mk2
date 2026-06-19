@@ -124,7 +124,7 @@ Next BFF:
 | Session control | Redis jti denylist, session version, rate limit |
 | Test | Vitest, Jest, Supertest |
 | Infra | Docker Compose, Kubernetes, Kustomize, cert-manager, Traefik, GitHub Actions, AWS |
-| Planning | GitHub Spec Kit |
+| AI SDLC | GitHub Spec Kit, BMAD Method |
 
 ## 로컬 실행
 
