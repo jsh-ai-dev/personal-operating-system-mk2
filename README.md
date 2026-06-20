@@ -227,3 +227,15 @@ npm run test:e2e --prefix backend
 - `k8s/base`: Namespace, ConfigMap, Secret 예시, PostgreSQL, Redis, Auth, API, Web, Ingress
 - `k8s/overlays/aws`: 외부 RDS/Redis, ECR 이미지, Traefik Ingress, cert-manager TLS
 - `.github/workflows/ecr-push.yml`: web/api/auth 이미지를 ECR push 후 self-hosted runner에서 k3s rollout restart
+
+## 로컬 공개 접속
+
+AWS 배포 설정은 나중에 다시 참고할 수 있도록 유지한다. AWS 비용을 줄이는 기간에는
+Cloudflare Tunnel을 사용해 `www.jsh-ai-dev.com`을 로컬 Docker 환경의 mk2 web으로 연결한다.
+
+```text
+https://www.jsh-ai-dev.com
+  -> Cloudflare Tunnel
+  -> local machine
+  -> http://localhost:3000
+```
